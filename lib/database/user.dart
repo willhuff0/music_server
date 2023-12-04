@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cryptography/cryptography.dart';
 import 'package:isar/isar.dart';
 import 'package:stateless_server/stateless_server.dart';
@@ -13,15 +15,39 @@ class User {
 
   final HashedUserPassword password;
 
-  final List<UserActivity> activity;
+  final List<UserActivity> activities;
 
   User({
     required this.id,
     required this.name,
     required this.email,
     required this.password,
-    this.activity = const [],
+    this.activities = const [],
   });
+
+  static User create({
+    required String id,
+    required String name,
+    required String email,
+    required HashedUserPassword password,
+  }) =>
+      User(
+        id: id,
+        name: name,
+        email: email,
+        password: password,
+        activities: [UserActivity.now(UserActivityType.createUser)],
+      );
+
+  Future<String> startSession(IdentityTokenAuthority identityTokenAuthority, Isar db, InternetAddress? ipAddress, String? userAgent) async {
+    final identityToken = IdentityToken(id, ipAddress, userAgent);
+    final encodedToken = identityTokenAuthority.signAndEncodeToken(identityToken);
+
+    activities.add(UserActivity.now(UserActivityType.startSession));
+    await db.writeAsync((isar) => isar.users.put(this));
+
+    return encodedToken;
+  }
 }
 
 final _passwordHashingAlgorithm = Argon2id(
@@ -62,6 +88,8 @@ class UserActivity {
     required this.type,
     required this.timestamp,
   });
+
+  static UserActivity now(UserActivityType type) => UserActivity(type: type, timestamp: DateTime.now().toUtc());
 }
 
 enum UserActivityType {

@@ -19,13 +19,13 @@ IdentityToken? verifyIdentityToken(IdentityTokenAuthority identityTokenAuthority
   return identityToken;
 }
 
-class AuthenticationWorker implements Worker {
+class MusicAuthenticationWorker implements Worker {
   final HttpServer _server;
 
   final IdentityTokenAuthority _identityTokenAuthority;
   final Isar _isar;
 
-  AuthenticationWorker._(this._server, this._identityTokenAuthority, this._isar, Router router) {
+  MusicAuthenticationWorker._(this._server, this._identityTokenAuthority, this._isar, Router router) {
     router
       ..get('/auth/status', _statusHandler)
       ..put('/auth/createUser', _createUserHandler)
@@ -34,16 +34,16 @@ class AuthenticationWorker implements Worker {
   }
 
   static Future<Worker> start(WorkerLaunchArgs args, {String? debugName}) async {
-    if (args is! WorkerLaunchArgsWithAuthentication) throw Exception('HttpWorkerWithAuthentication must be started with WorkerLaunchArgsWithAuthentication');
+    if (args is! WorkerLaunchArgsWithAuthentication) throw Exception('AuthenticationWorker must be started with WorkerLaunchArgsWithAuthentication');
 
     final router = Router();
     final handler = Pipeline().addMiddleware(logRequests(logger: debugName != null ? (message, isError) => print('[$debugName] $message') : null)).addHandler(router.call);
     final server = await serve(handler, args.config.address, args.config.port, shared: true);
 
-    final identityTokenAuthority = IdentityTokenAuthority.initialize(args.config, args.privateKey);
+    final identityTokenAuthority = IdentityTokenAuthority.initializeOnIsolate(args.config, args.privateKey);
     final isar = await openIsarDatabaseOnIsolate();
 
-    return AuthenticationWorker._(server, identityTokenAuthority, isar, router);
+    return MusicAuthenticationWorker._(server, identityTokenAuthority, isar, router);
   }
 
   @override
@@ -72,13 +72,17 @@ class AuthenticationWorker implements Worker {
 
     final userId = _secureUuid.v7();
 
-    final dbUser = User(id: userId, name: name, email: email, password: hashedUserPassword);
-    _isar.users.put(dbUser);
+    final dbUser = User.create(
+      id: userId,
+      name: name,
+      email: email,
+      password: hashedUserPassword,
+    );
 
-    final clientAddress = (request.context['shelf.io.connection_info'] as HttpConnectionInfo?)?.remoteAddress;
+    final clientIpAddress = (request.context['shelf.io.connection_info'] as HttpConnectionInfo?)?.remoteAddress;
     final clientUserAgent = request.headers['User-Agent'];
-    final identityToken = IdentityToken(userId, clientAddress, clientUserAgent);
-    final encodedToken = _identityTokenAuthority.signAndEncodeToken(identityToken);
+    final encodedToken = await dbUser.startSession(_identityTokenAuthority, _isar, clientIpAddress, clientUserAgent);
+    // dbUser is added to database inside this ^ call so no need to do it in this scope
 
     return Response.ok('Success', headers: {'token': encodedToken});
   }
@@ -94,10 +98,9 @@ class AuthenticationWorker implements Worker {
 
     if (!await dbUser.password.checkPasswordMatch(password)) return Response.forbidden('Authentication error');
 
-    final clientAddress = (request.context['shelf.io.connection_info'] as HttpConnectionInfo?)?.remoteAddress;
+    final clientIpAddress = (request.context['shelf.io.connection_info'] as HttpConnectionInfo?)?.remoteAddress;
     final clientUserAgent = request.headers['User-Agent'];
-    final identityToken = IdentityToken(dbUser.id, clientAddress, clientUserAgent);
-    final encodedToken = _identityTokenAuthority.signAndEncodeToken(identityToken);
+    final encodedToken = await dbUser.startSession(_identityTokenAuthority, _isar, clientIpAddress, clientUserAgent);
 
     return Response.ok('Success', headers: {'token': encodedToken});
   }

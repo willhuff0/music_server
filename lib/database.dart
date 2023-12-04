@@ -4,7 +4,7 @@ import 'package:isar/isar.dart';
 import 'package:music_server/database/user.dart';
 import 'package:path/path.dart' as p;
 
-Future<Isar> openIsarDatabaseOnIsolate() async {
+Future<Isar> openIsarDatabaseOnIsolate({bool inspector = false}) async {
   String path;
   if (const bool.fromEnvironment("dart.vm.product")) {
     path = p.dirname(Platform.resolvedExecutable);
@@ -12,6 +12,7 @@ Future<Isar> openIsarDatabaseOnIsolate() async {
     path = Directory.current.path;
   }
   path = p.join(path, 'database');
+  await Directory(path).create(recursive: true);
 
   final isar = await Isar.openAsync(
     schemas: [
@@ -19,6 +20,7 @@ Future<Isar> openIsarDatabaseOnIsolate() async {
       UserActivitySchema,
     ],
     directory: path,
+    inspector: inspector,
   );
 
   return isar;

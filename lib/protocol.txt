@@ -8,3 +8,7 @@
     "uid": String,
     "password": String,
 )
+
+/auth/getName (
+    "token": IdentityToken,
+)
