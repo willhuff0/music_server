@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:email_validator/email_validator.dart';
 import 'package:isar/isar.dart';
 import 'package:music_server/database.dart';
 import 'package:music_server/database/user.dart';
@@ -118,17 +119,24 @@ class MusicAuthenticationWorker implements Worker {
   }
 
   bool _validateNewName(String name) {
-    // TODO
+    const minLength = 2;
+    const maxLength = 16;
+
+    if (name.length < minLength || name.length > maxLength) return false;
+
     return true;
   }
 
   bool _validateNewEmail(String email) {
-    // TODO
-    return true;
+    return EmailValidator.validate(email);
   }
 
   bool _validateNewPassword(String password) {
-    // TODO
+    const minLength = 8;
+    const maxLength = 64;
+
+    if (password.length < minLength || password.length > maxLength) return false;
+
     return true;
   }
 }
