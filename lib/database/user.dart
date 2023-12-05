@@ -46,7 +46,7 @@ class User {
     final encodedToken = identityTokenAuthority.signAndEncodeToken(identityToken);
 
     activities.add(UserActivity.now(UserActivityType.startSession));
-    await db.writeAsync((isar) => isar.users.put(this));
+    db.write((isar) => isar.users.put(this));
 
     return encodedToken;
   }

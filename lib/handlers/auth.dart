@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:email_validator/email_validator.dart';
-import 'package:isar/isar.dart';
 import 'package:music_server/database.dart';
 import 'package:music_server/music_server.dart';
 import 'package:stateless_server/stateless_server.dart';
@@ -50,7 +49,7 @@ FutureOr<Response> startSessionHandler(Request request, MusicServerThreadData th
   final password = request.headers['password'];
   if (password == null) return Response.badRequest();
 
-  final dbUser = await threadData.isar.users.getAsync(uid);
+  final dbUser = threadData.isar.users.get(uid);
   if (dbUser == null) return Response.forbidden('Authentication error');
 
   if (!await dbUser.password.checkPasswordMatch(password)) return Response.forbidden('Authentication error');
