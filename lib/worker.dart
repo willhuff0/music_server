@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:email_validator/email_validator.dart';
 import 'package:isar/isar.dart';
 import 'package:music_server/database.dart';
-import 'package:music_server/database/user.dart';
 import 'package:stateless_server/stateless_server.dart';
 import 'package:uuid/data.dart';
 import 'package:uuid/rng.dart';
@@ -20,18 +19,19 @@ IdentityToken? verifyIdentityToken(IdentityTokenAuthority identityTokenAuthority
   return identityToken;
 }
 
-class MusicAuthenticationWorker implements Worker {
+class MusicWorker implements Worker {
   final HttpServer _server;
 
   final IdentityTokenAuthority _identityTokenAuthority;
   final Isar _isar;
 
-  MusicAuthenticationWorker._(this._server, this._identityTokenAuthority, this._isar, Router router) {
+  MusicWorker._(this._server, this._identityTokenAuthority, this._isar, Router router) {
     router
       ..get('/auth/status', _statusHandler)
       ..put('/auth/createUser', _createUserHandler)
       ..put('/auth/startSession', _startSession)
-      ..get('/auth/getName', _getNameHandler);
+      ..get('/auth/getName', _getNameHandler)
+      ..put('/song/upload', _uploadSongHandler);
   }
 
   static Future<Worker> start(WorkerLaunchArgs args, {String? debugName}) async {
@@ -44,7 +44,7 @@ class MusicAuthenticationWorker implements Worker {
     final identityTokenAuthority = IdentityTokenAuthority.initializeOnIsolate(args.config, args.privateKey);
     final isar = await openIsarDatabaseOnIsolate();
 
-    return MusicAuthenticationWorker._(server, identityTokenAuthority, isar, router);
+    return MusicWorker._(server, identityTokenAuthority, isar, router);
   }
 
   @override
@@ -139,4 +139,6 @@ class MusicAuthenticationWorker implements Worker {
 
     return true;
   }
+
+  FutureOr<Response> _uploadSongHandler(Request request) async {}
 }

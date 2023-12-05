@@ -6,6 +6,8 @@ part 'song.g.dart';
 class Song {
   final int id;
 
+  final String owner;
+
   final String name;
   final String description;
 
@@ -13,6 +15,7 @@ class Song {
 
   Song({
     required this.id,
+    required this.owner,
     required this.name,
     required this.description,
     this.numPlays = 0,

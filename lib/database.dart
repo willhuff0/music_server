@@ -4,6 +4,9 @@ import 'package:isar/isar.dart';
 import 'package:music_server/database/user.dart';
 import 'package:path/path.dart' as p;
 
+export 'database/user.dart';
+export 'database/song.dart';
+
 Future<Isar> openIsarDatabaseOnIsolate({bool inspector = false}) async {
   String path;
   if (const bool.fromEnvironment("dart.vm.product")) {

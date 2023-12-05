@@ -12,3 +12,9 @@
 /auth/getName (
     "token": IdentityToken,
 )
+
+/song/upload (
+    "token": IdentityToken,
+    "name": String,
+    "description": String,
+)
