@@ -1,13 +1,15 @@
 import 'package:music_server/database.dart';
-import 'package:music_server/worker.dart';
+import 'package:music_server/music_server.dart';
 import 'package:stateless_server/stateless_server.dart';
 
 void main(List<String> arguments) async {
   final config = ServerConfig();
-  final workerLaunchArgs = WorkerLaunchArgsWithAuthentication(
-    start: MusicWorker.start,
+  final privateKey = generateSecureRandomKey(config.tokenKeyLength);
+
+  final workerLaunchArgs = CustomWorkerLaunchArgs(
     config: config,
-    privateKey: generateSecureRandomKey(config.tokenKeyLength),
+    createThreadData: makeMusicServerCreateThreadData(config, privateKey),
+    customHandlers: musicServerCustomHandlers,
   );
   await StatelessServer.start(config: config, workerLaunchArgs: workerLaunchArgs);
 
