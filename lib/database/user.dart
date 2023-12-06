@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:isar/isar.dart';
+import 'package:music_server/music_server.dart';
 import 'package:stateless_server/stateless_server.dart';
 
 part 'user.g.dart';
@@ -41,17 +42,18 @@ class User {
         activities: [UserActivity.now(UserActivityType.createUser)],
       );
 
-  Future<String> startSession(IdentityTokenAuthority identityTokenAuthority, Isar db, InternetAddress? ipAddress, String? userAgent) async {
+  Future<String> startSession(MusicServerThreadData threadData, InternetAddress? ipAddress, String? userAgent) async {
     final identityToken = IdentityToken(id, ipAddress, userAgent);
-    final encodedToken = identityTokenAuthority.signAndEncodeToken(identityToken);
+    final encodedToken = threadData.identityTokenAuthority.signAndEncodeToken(identityToken);
 
     activities.add(UserActivity.now(UserActivityType.startSession));
-    db.write((isar) => isar.users.put(this));
+    threadData.isar.write((isar) => isar.users.put(this));
 
     return encodedToken;
   }
 }
 
+// TODO: swap for native c library
 final _passwordHashingAlgorithm = Argon2id(
   parallelism: 1,
   memory: 19456,

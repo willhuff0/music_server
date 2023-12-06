@@ -1,4 +1,3 @@
-import 'package:music_server/database.dart';
 import 'package:music_server/music_server.dart';
 import 'package:stateless_server/stateless_server.dart';
 
@@ -13,5 +12,5 @@ void main(List<String> arguments) async {
   );
   await StatelessServer.start(config: config, workerLaunchArgs: workerLaunchArgs);
 
-  await openIsarDatabaseOnIsolate(inspector: true);
+  openIsarDatabaseOnIsolate(inspector: true);
 }
