@@ -9,13 +9,13 @@ import 'package:music_server/stateless_server/server.dart';
 final Random _random = Random.secure();
 Uint8List generateSecureRandomKey(int bytes) => _random.nextBytes(bytes);
 
-class IdentityTokenAuthority {
+class IdentityTokenAuthority<TClaims extends IdentityTokenClaims> {
   final ServerConfig _config;
   final Hmac _hmac;
 
   IdentityTokenAuthority.initializeOnIsolate(this._config, List<int> privateKey) : _hmac = Hmac(_config.tokenHashAlg, privateKey);
 
-  IdentityToken? verifyAndDecodeToken(String encodedToken) {
+  IdentityToken<TClaims>? verifyAndDecodeToken(String encodedToken) {
     try {
       List<String> encodedParts = encodedToken.split('.');
       if (encodedParts.length != 2) return null;
@@ -23,24 +23,31 @@ class IdentityTokenAuthority {
       Uint8List body = base64.decode(encodedParts[0]);
       Map<String, dynamic> bodyMap = jsonDecode(utf8.decode(body));
 
+      // Verify timestamp
       final timestampString = bodyMap['time'] as String?;
       if (timestampString == null) return null;
       final timestamp = DateTime.tryParse(timestampString);
       if (timestamp == null) return null;
+      if (DateTime.now().toUtc().difference(timestamp) > _config.tokenLifetime) return null;
 
-      IdentityToken token = IdentityToken._(
-        userId: bodyMap['uid'] as String?,
-        timestamp: timestamp,
-        ipAddress: bodyMap.containsKey('ip') ? InternetAddress.tryParse(bodyMap['ip'] as String) : null,
-        userAgent: bodyMap['agent'] as String?,
-      );
-
-      if (DateTime.now().toUtc().difference(token.timestamp) > _config.tokenLifetime) return null;
-
+      // Verify signature
       Digest claimedSignature = Digest(base64.decode(encodedParts[1]));
       Digest actualSignature = _hmac.convert(body);
-
       if (claimedSignature != actualSignature) return null;
+
+      InternetAddress? ip;
+      final ipString = bodyMap['ip'] as String?;
+      if (ipString != null) {
+        ip = InternetAddress.tryParse(ipString);
+      }
+
+      IdentityToken<TClaims> token = IdentityToken<TClaims>._(
+        userId: bodyMap['uid'] as String?,
+        timestamp: timestamp,
+        ipAddress: ip,
+        userAgent: bodyMap['agent'] as String?,
+        claims: _config.tokenClaimsFromJson(bodyMap['claims'] as Map<String, dynamic>? ?? {}) as TClaims,
+      );
 
       return token;
     } catch (e) {
@@ -50,12 +57,15 @@ class IdentityTokenAuthority {
   }
 
   String signAndEncodeToken(IdentityToken token) {
+    final claimsJson = token.claims.toJson();
+
     Map<String, dynamic> bodyMap = {
       if (token.userId != null) 'uid': token.userId,
       'time': token.timestamp.toIso8601String(),
       if (token.ipAddress != null) 'ip': token.ipAddress!.address,
       if (token.userAgent != null) 'agent': token.userAgent,
       'key': generateSecureRandomKey(_config.tokenKeyLength),
+      if (claimsJson.isNotEmpty) 'claims': claimsJson,
     };
 
     Uint8List body = utf8.encode(jsonEncode(bodyMap));
@@ -67,15 +77,28 @@ class IdentityTokenAuthority {
   }
 }
 
-class IdentityToken {
+class IdentityToken<TClaims extends IdentityTokenClaims> {
   final String? userId;
   final DateTime timestamp;
   final InternetAddress? ipAddress;
   final String? userAgent;
+  final TClaims claims;
 
-  IdentityToken._({required this.userId, required this.timestamp, required this.ipAddress, required this.userAgent});
+  IdentityToken._({
+    required this.userId,
+    required this.timestamp,
+    required this.ipAddress,
+    required this.userAgent,
+    required this.claims,
+  });
 
-  IdentityToken(this.userId, this.ipAddress, this.userAgent) : timestamp = DateTime.now().toUtc();
+  IdentityToken(this.userId, this.ipAddress, this.userAgent, this.claims) : timestamp = DateTime.now().toUtc();
+}
+
+class IdentityTokenClaims {
+  static IdentityTokenClaims fromJson(Map<String, dynamic> json) => IdentityTokenClaims();
+
+  Map<String, dynamic> toJson() => {};
 }
 
 extension RandomExtensions on Random {

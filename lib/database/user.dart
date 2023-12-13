@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:isar/isar.dart';
+import 'package:music_server/music_server.dart';
 import 'package:music_server/stateless_server/stateless_server.dart';
 
 part 'user.g.dart';
@@ -20,12 +21,16 @@ class User {
 
   final HashedUserPassword password;
 
+  @enumerated
+  final UserTier tier;
+
   User({
     this.isarId = Isar.autoIncrement,
     required this.id,
     required this.name,
     required this.email,
     required this.password,
+    required this.tier,
   });
 
   static User create({
@@ -39,10 +44,15 @@ class User {
         name: name,
         email: email,
         password: password,
+        tier: UserTier.free,
       );
 
-  String startSession(IdentityTokenAuthority identityTokenAuthority, InternetAddress? ipAddress, String? userAgent) {
-    final identityToken = IdentityToken(id, ipAddress, userAgent);
+  MusicServerIdentityTokenClaims getIdentityTokenClaims() => MusicServerIdentityTokenClaims(
+        tier: tier,
+      );
+
+  String startSession(IdentityTokenAuthority<MusicServerIdentityTokenClaims> identityTokenAuthority, InternetAddress? ipAddress, String? userAgent) {
+    final identityToken = IdentityToken(id, ipAddress, userAgent, getIdentityTokenClaims());
     final encodedToken = identityTokenAuthority.signAndEncodeToken(identityToken);
     return encodedToken;
   }
@@ -107,4 +117,9 @@ bool memEquals(Uint8List bytes1, Uint8List bytes2) {
   }
 
   return true;
+}
+
+enum UserTier {
+  free,
+  paid,
 }

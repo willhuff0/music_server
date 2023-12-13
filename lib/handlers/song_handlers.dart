@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:music_server/audio_processing.dart';
+import 'package:music_server/database/song.dart';
 import 'package:music_server/database/transcode_operation.dart';
 import 'package:music_server/database/unprocessed_song.dart';
 import 'package:music_server/music_server.dart';
@@ -12,8 +14,9 @@ const maxUploadChunkBytes = 100 * 1000 * 1000;
 
 final _uuid = Uuid();
 
-FutureOr<Response> songCreateHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) async {
+FutureOr<Response> songCreateHandler(Request request, MusicServerThreadData threadData, IdentityToken<MusicServerIdentityTokenClaims> identityToken) async {
   if (identityToken.userId == null) return Response.forbidden('');
+  if (!identityToken.claims.canSongCreate()) return Response.forbidden('');
 
   final map = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
 
@@ -109,4 +112,52 @@ FutureOr<Response> songUploadDataHandler(Request request, MusicServerThreadData 
   }
 
   return Response.ok('');
+}
+
+FutureOr<Response> songGetDataHandler(Request request, MusicServerThreadData threadData, IdentityToken<MusicServerIdentityTokenClaims> identityToken) {
+  if (!identityToken.claims.canSongGetData()) return Response.forbidden('');
+
+  final songId = request.headers['songId'];
+  if (songId == null) return Response.badRequest();
+
+  int? start;
+  final startString = request.headers['start'];
+  if (startString != null) {
+    start = int.tryParse(startString);
+    if (start == null) return Response.badRequest();
+  }
+
+  int? end;
+  final endString = request.headers['end'];
+  if (endString != null) {
+    end = int.tryParse(endString);
+    if (end == null) return Response.badRequest();
+  }
+
+  CompressedAudioFormat format;
+  final formatString = request.headers['format'];
+  if (formatString == null) {
+    format = CompressedAudioFormat.aac;
+  } else {
+    final formatInt = int.tryParse(formatString);
+    if (formatInt == null || formatInt < 0 || formatInt >= CompressedAudioFormat.values.length) return Response.badRequest();
+    format = CompressedAudioFormat.values[formatInt];
+  }
+
+  CompressedAudioQuality quality;
+  final qualityString = request.headers['quality'];
+  if (qualityString == null) {
+    quality = CompressedAudioQuality.high;
+  } else {
+    final qualityInt = int.tryParse(qualityString);
+    if (qualityInt == null || qualityInt < 0 || qualityInt >= CompressedAudioQuality.values.length) return Response.badRequest();
+    quality = CompressedAudioQuality.values[qualityInt];
+  }
+
+  final preset = AudioPreset(format: format, quality: quality);
+
+  final songFile = File(getSongFilePath(threadData.paths, songId, preset));
+  if (!songFile.existsSync()) return Response.notFound('');
+
+  return Response.ok(songFile.openRead(start, end), headers: {'content-type': 'audio/${preset.format.fileType}'});
 }

@@ -55,8 +55,8 @@ class CustomHandler<TThreadData extends CustomThreadData> extends CustomHandlerB
   FutureOr<Response> Function(Request request) createHandler(TThreadData threadData) => (request) => handle(request, threadData);
 }
 
-class CustomHandlerAuthRequired<TThreadData extends CustomThreadDataWithAuth> extends CustomHandlerBase<TThreadData> {
-  final FutureOr<Response> Function(Request request, TThreadData threadData, IdentityToken identityToken) handle;
+class CustomHandlerAuthRequired<TClaims extends IdentityTokenClaims, TThreadData extends CustomThreadDataWithAuth<TClaims>> extends CustomHandlerBase<TThreadData> {
+  final FutureOr<Response> Function(Request request, TThreadData threadData, IdentityToken<TClaims> identityToken) handle;
 
   CustomHandlerAuthRequired({required super.path, required this.handle});
 
@@ -73,8 +73,8 @@ class CustomHandlerAuthRequired<TThreadData extends CustomThreadDataWithAuth> ex
 
 abstract class CustomThreadData {}
 
-class CustomThreadDataWithAuth extends CustomThreadData {
-  final IdentityTokenAuthority identityTokenAuthority;
+class CustomThreadDataWithAuth<TClaims extends IdentityTokenClaims> extends CustomThreadData {
+  final IdentityTokenAuthority<TClaims> identityTokenAuthority;
 
   CustomThreadDataWithAuth({required this.identityTokenAuthority});
 }

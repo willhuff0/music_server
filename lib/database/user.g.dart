@@ -37,6 +37,12 @@ const UserSchema = CollectionSchema(
       name: r'password',
       type: IsarType.object,
       target: r'HashedUserPassword',
+    ),
+    r'tier': PropertySchema(
+      id: 4,
+      name: r'tier',
+      type: IsarType.byte,
+      enumMap: _UsertierEnumValueMap,
     )
   },
   estimateSize: _userEstimateSize,
@@ -97,6 +103,7 @@ void _userSerialize(
     HashedUserPasswordSchema.serialize,
     object.password,
   );
+  writer.writeByte(offsets[4], object.tier.index);
 }
 
 User _userDeserialize(
@@ -116,6 +123,8 @@ User _userDeserialize(
           allOffsets,
         ) ??
         HashedUserPassword(),
+    tier: _UsertierValueEnumMap[reader.readByteOrNull(offsets[4])] ??
+        UserTier.free,
   );
   return object;
 }
@@ -140,10 +149,22 @@ P _userDeserializeProp<P>(
             allOffsets,
           ) ??
           HashedUserPassword()) as P;
+    case 4:
+      return (_UsertierValueEnumMap[reader.readByteOrNull(offset)] ??
+          UserTier.free) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
+
+const _UsertierEnumValueMap = {
+  'free': 0,
+  'paid': 1,
+};
+const _UsertierValueEnumMap = {
+  0: UserTier.free,
+  1: UserTier.paid,
+};
 
 Id _userGetId(User object) {
   return object.isarId;
@@ -765,6 +786,58 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
       ));
     });
   }
+
+  QueryBuilder<User, User, QAfterFilterCondition> tierEqualTo(UserTier value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'tier',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> tierGreaterThan(
+    UserTier value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'tier',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> tierLessThan(
+    UserTier value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'tier',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> tierBetween(
+    UserTier lower,
+    UserTier upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'tier',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension UserQueryObject on QueryBuilder<User, User, QFilterCondition> {
@@ -812,6 +885,18 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
   QueryBuilder<User, User, QAfterSortBy> sortByNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.desc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByTier() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tier', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByTierDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tier', Sort.desc);
     });
   }
 }
@@ -864,6 +949,18 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
       return query.addSortBy(r'name', Sort.desc);
     });
   }
+
+  QueryBuilder<User, User, QAfterSortBy> thenByTier() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tier', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> thenByTierDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'tier', Sort.desc);
+    });
+  }
 }
 
 extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
@@ -885,6 +982,12 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'name', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<User, User, QDistinct> distinctByTier() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'tier');
     });
   }
 }
@@ -917,6 +1020,12 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
   QueryBuilder<User, HashedUserPassword, QQueryOperations> passwordProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'password');
+    });
+  }
+
+  QueryBuilder<User, UserTier, QQueryOperations> tierProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'tier');
     });
   }
 }

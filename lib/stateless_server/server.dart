@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:music_server/stateless_server/identity_token.dart';
 import 'package:music_server/stateless_server/worker.dart';
 
 class StatelessServer {
@@ -40,6 +41,9 @@ class ServerConfig {
   /// The length in bytes of the random keys generated for identity tokens
   final int tokenKeyLength;
 
+  /// Usually a constructor or static method that decodes a class implementing IdentityTokenClaims
+  final IdentityTokenClaims Function(Map<String, dynamic> json) tokenClaimsFromJson;
+
   ServerConfig({
     this.numWorkers = 8,
     InternetAddress? address,
@@ -47,5 +51,6 @@ class ServerConfig {
     this.tokenLifetime = const Duration(hours: 8),
     this.tokenHashAlg = sha256,
     this.tokenKeyLength = 256 ~/ 8,
+    this.tokenClaimsFromJson = IdentityTokenClaims.fromJson,
   }) : address = address ?? InternetAddress.anyIPv4;
 }

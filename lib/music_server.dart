@@ -24,22 +24,11 @@ class MusicServerConfig extends ServerConfig {
     super.tokenHashAlg,
     super.tokenKeyLength,
     this.numTranscodeWorkers = 2,
+    super.tokenClaimsFromJson = MusicServerIdentityTokenClaims.fromJson,
   });
 }
 
-Isar openIsarDatabaseOnIsolate(MusicServerPaths paths, {bool inspector = false}) => Isar.openSync(
-      [
-        UserSchema,
-        UserActivitySchema,
-        SongSchema,
-        UnprocessedSongSchema,
-        TranscodeOperationSchema,
-      ],
-      directory: paths.databasePath,
-      inspector: inspector,
-    );
-
-class MusicServerThreadData extends CustomThreadDataWithAuth {
+class MusicServerThreadData extends CustomThreadDataWithAuth<MusicServerIdentityTokenClaims> {
   final MusicServerPaths paths;
   final Isar isar;
 
@@ -48,6 +37,38 @@ class MusicServerThreadData extends CustomThreadDataWithAuth {
     required this.paths,
     required this.isar,
   });
+}
+
+class MusicServerIdentityTokenClaims extends IdentityTokenClaims {
+  final UserTier tier;
+
+  MusicServerIdentityTokenClaims({
+    required this.tier,
+  });
+
+  static MusicServerIdentityTokenClaims fromJson(Map<String, dynamic> json) {
+    //final tier = UserTier.values[json['tier'] as int? ?? 0];
+
+    UserTier tier;
+    final tierInt = json['tier'] as int?;
+    if (tierInt != null) {
+      tier = UserTier.values[tierInt];
+    } else {
+      tier = UserTier.free;
+    }
+
+    return MusicServerIdentityTokenClaims(
+      tier: tier,
+    );
+  }
+
+  @override
+  Map<String, dynamic> toJson() => {
+        if (tier != UserTier.free) 'tier': tier.index,
+      };
+
+  bool canSongCreate() => tier == UserTier.paid;
+  bool canSongGetData() => tier == UserTier.paid;
 }
 
 class MusicServerPaths {
@@ -81,7 +102,7 @@ class MusicServerPaths {
 }
 
 MusicServerThreadData Function() makeMusicServerCreateThreadData(MusicServerPaths paths, MusicServerConfig config, List<int> privateKey) => () {
-      final identityTokenAuthority = IdentityTokenAuthority.initializeOnIsolate(config, privateKey);
+      final identityTokenAuthority = IdentityTokenAuthority<MusicServerIdentityTokenClaims>.initializeOnIsolate(config, privateKey);
       final isar = openIsarDatabaseOnIsolate(paths);
 
       return MusicServerThreadData(
@@ -90,6 +111,18 @@ MusicServerThreadData Function() makeMusicServerCreateThreadData(MusicServerPath
         isar: isar,
       );
     };
+
+Isar openIsarDatabaseOnIsolate(MusicServerPaths paths, {bool inspector = false}) => Isar.openSync(
+      [
+        UserSchema,
+        UserActivitySchema,
+        SongSchema,
+        UnprocessedSongSchema,
+        TranscodeOperationSchema,
+      ],
+      directory: paths.databasePath,
+      inspector: inspector,
+    );
 
 final musicServerCustomHandlers = [
   CustomHandler(path: '/status', handle: statusHandler),
@@ -102,6 +135,7 @@ final musicServerCustomHandlers = [
   // Song
   CustomHandlerAuthRequired(path: '/song/create', handle: songCreateHandler),
   CustomHandlerAuthRequired(path: '/song/uploadData', handle: songUploadDataHandler),
+  CustomHandlerAuthRequired(path: '/song/getData', handle: songGetDataHandler),
 ];
 
 Response statusHandler(Request request, MusicServerThreadData threadData) {

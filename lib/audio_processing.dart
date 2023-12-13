@@ -183,12 +183,12 @@ enum CompressedAudioQuality {
 }
 
 enum CompressedAudioFormat {
-  opus(fileExtension: '.opus'),
-  aac(fileExtension: '.aac');
+  opus(fileType: 'opus'),
+  aac(fileType: 'aac');
 
-  final String fileExtension;
+  final String fileType;
 
-  const CompressedAudioFormat({required this.fileExtension});
+  const CompressedAudioFormat({required this.fileType});
 }
 
 class AudioPreset {
@@ -201,7 +201,7 @@ class AudioPreset {
   String toString() => '{${format.name}, ${quality.name}}';
 }
 
-String getOutputFilePath(String dir, AudioPreset preset) => p.join(dir, '${preset.quality.outputFileName}${preset.format.fileExtension}');
+String getOutputFilePath(String dir, AudioPreset preset) => p.join(dir, '${preset.quality.outputFileName}.${preset.format.fileType}');
 
 Future<String?> processAudio({required MusicServerPaths paths, required String inputFile, required String outputDir, required List<AudioPreset> presets}) async {
   try {
