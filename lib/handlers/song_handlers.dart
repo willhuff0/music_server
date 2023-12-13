@@ -88,7 +88,7 @@ FutureOr<Response> songUploadDataHandler(Request request, MusicServerThreadData 
   var length = 0;
   await for (final part in request.read()) {
     length += part.length;
-    if (length > maxUploadChunkBytes) return Response.forbidden('');
+    if (length > maxUploadChunkBytes) return Response.badRequest();
 
     data.addAll(part);
   }
