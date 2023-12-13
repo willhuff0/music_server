@@ -16,7 +16,7 @@
 String "songId" /song/create (
     "token": IdentityToken,
 ) {
-    "fileExtension": String [.flac, .wav],
+    "fileExtension": String [.flac, .wav, ...],
     "numParts": int,
     "name": String (1 <= length <= 50),
     "description": String (length <= 100),
@@ -28,3 +28,12 @@ String "songId" /song/create (
     "start": int,
     "content-length": int (< 100000000 (100 MB)),
 ) byte[] (length < 100000000 (100 MB))
+
+byte[] /song/getData (
+    "token": IdentityToken,
+    "songId": String,
+    "start": int?,
+    "end": int?,
+    "format": int ?= 1 [0: opus, 1: aac],
+    "quality": int ?= 2 [0: low, 1: medium, 2: high],
+)
