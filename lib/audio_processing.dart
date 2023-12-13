@@ -10,7 +10,7 @@ import 'package:music_server/database/transcode_operation.dart';
 import 'package:music_server/database/unprocessed_song.dart';
 import 'package:music_server/music_server.dart';
 import 'package:path/path.dart' as p;
-import 'package:stateless_server/stateless_server.dart';
+import 'package:music_server/stateless_server/stateless_server.dart';
 
 import 'database/song.dart';
 
@@ -116,12 +116,12 @@ class AudioTranscoderWorker implements Worker {
       inputFile: inputFile.path,
       outputDir: outputDir,
       presets: [
-        ProcessAudioPreset(format: CompressedAudioFormat.opus, quality: CompressedAudioQuality.low),
-        ProcessAudioPreset(format: CompressedAudioFormat.opus, quality: CompressedAudioQuality.medium),
-        ProcessAudioPreset(format: CompressedAudioFormat.opus, quality: CompressedAudioQuality.high),
-        ProcessAudioPreset(format: CompressedAudioFormat.aac, quality: CompressedAudioQuality.low),
-        ProcessAudioPreset(format: CompressedAudioFormat.aac, quality: CompressedAudioQuality.medium),
-        ProcessAudioPreset(format: CompressedAudioFormat.aac, quality: CompressedAudioQuality.high),
+        AudioPreset(format: CompressedAudioFormat.opus, quality: CompressedAudioQuality.low),
+        AudioPreset(format: CompressedAudioFormat.opus, quality: CompressedAudioQuality.medium),
+        AudioPreset(format: CompressedAudioFormat.opus, quality: CompressedAudioQuality.high),
+        AudioPreset(format: CompressedAudioFormat.aac, quality: CompressedAudioQuality.low),
+        AudioPreset(format: CompressedAudioFormat.aac, quality: CompressedAudioQuality.medium),
+        AudioPreset(format: CompressedAudioFormat.aac, quality: CompressedAudioQuality.high),
       ],
     );
 
@@ -191,19 +191,19 @@ enum CompressedAudioFormat {
   const CompressedAudioFormat({required this.fileExtension});
 }
 
-class ProcessAudioPreset {
+class AudioPreset {
   final CompressedAudioFormat format;
   final CompressedAudioQuality quality;
 
-  ProcessAudioPreset({required this.format, required this.quality});
+  AudioPreset({required this.format, required this.quality});
 
   @override
   String toString() => '{${format.name}, ${quality.name}}';
 }
 
-String getOutputFilePath(String dir, ProcessAudioPreset preset) => p.join(dir, '${preset.quality.outputFileName}${preset.format.fileExtension}');
+String getOutputFilePath(String dir, AudioPreset preset) => p.join(dir, '${preset.quality.outputFileName}${preset.format.fileExtension}');
 
-Future<String?> processAudio({required MusicServerPaths paths, required String inputFile, required String outputDir, required List<ProcessAudioPreset> presets}) async {
+Future<String?> processAudio({required MusicServerPaths paths, required String inputFile, required String outputDir, required List<AudioPreset> presets}) async {
   try {
     // get channel count
     final ffprobeResult = await Process.run(paths.ffprobePath, ['-v', 'quiet', '-print_format', 'json', '-show_streams', '-select_streams', 'a:0', inputFile]);
@@ -262,7 +262,7 @@ Future<String?> processAudio({required MusicServerPaths paths, required String i
       if (loudnormStep2Result.exitCode != 0) return 'ffmpeg loudnorm step 2 exited with an error (${loudnormStep2Result.exitCode}): ${loudnormStep2Result.stderr}';
 
       // transcode with each preset
-      Future<String?> processPreset(ProcessAudioPreset preset) async {
+      Future<String?> processPreset(AudioPreset preset) async {
         final outputFile = getOutputFilePath(outputDir, preset);
 
         final encodeParameters = switch (preset.format) {

@@ -46,4 +46,4 @@ class Song {
 }
 
 String getSongStorageDir(MusicServerPaths paths, String id) => p.join(paths.storagePath, 'songs', id);
-String getSongFilePath(MusicServerPaths paths, String id, ProcessAudioPreset preset) => p.join(paths.storagePath, 'songs', id, '${preset.quality.outputFileName}${preset.format.fileExtension}');
+String getSongFilePath(MusicServerPaths paths, String id, AudioPreset preset) => p.join(paths.storagePath, 'songs', id, '${preset.quality.outputFileName}${preset.format.fileExtension}');

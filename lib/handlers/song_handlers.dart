@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:music_server/database/transcode_operation.dart';
 import 'package:music_server/database/unprocessed_song.dart';
 import 'package:music_server/music_server.dart';
-import 'package:stateless_server/stateless_server.dart';
+import 'package:music_server/stateless_server/stateless_server.dart';
 import 'package:uuid/uuid.dart';
 
 const maxUploadChunkBytes = 100 * 1000 * 1000;

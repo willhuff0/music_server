@@ -5,7 +5,7 @@ import 'package:email_validator/email_validator.dart';
 import 'package:music_server/database/user.dart';
 import 'package:music_server/database/user_activity.dart';
 import 'package:music_server/music_server.dart';
-import 'package:stateless_server/stateless_server.dart';
+import 'package:music_server/stateless_server/stateless_server.dart';
 import 'package:uuid/data.dart';
 import 'package:uuid/rng.dart';
 import 'package:uuid/uuid.dart';

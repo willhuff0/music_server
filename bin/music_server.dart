@@ -1,7 +1,7 @@
 import 'package:isar/isar.dart';
 import 'package:music_server/audio_processing.dart';
 import 'package:music_server/music_server.dart';
-import 'package:stateless_server/stateless_server.dart';
+import 'package:music_server/stateless_server/stateless_server.dart';
 
 void main(List<String> arguments) async {
   Isar? inspectorIsar;

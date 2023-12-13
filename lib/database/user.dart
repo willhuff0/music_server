@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:isar/isar.dart';
-import 'package:stateless_server/stateless_server.dart';
+import 'package:music_server/stateless_server/stateless_server.dart';
 
 part 'user.g.dart';
 

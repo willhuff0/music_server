@@ -7,7 +7,7 @@ import 'package:music_server/database/unprocessed_song.dart';
 import 'package:music_server/database/user_activity.dart';
 import 'package:music_server/handlers/auth_handlers.dart';
 import 'package:music_server/handlers/song_handlers.dart';
-import 'package:stateless_server/stateless_server.dart';
+import 'package:music_server/stateless_server/stateless_server.dart';
 import 'package:path/path.dart' as p;
 
 import 'database/user.dart';
