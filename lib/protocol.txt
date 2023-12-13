@@ -1,20 +1,30 @@
-/auth/createUser (
-    "name": String,
-    "email": String,
-    "password": String,
+/auth/createUser : IdentityToken (
+    "name": String (2 <= length <= 24),
+    "email": String (emailValidator),
+    "password": String (8 <= length <= 64),
 )
 
-/auth/startSession (
+/auth/startSession : IdentityToken (
     "uid": String,
     "password": String,
 )
 
-/auth/getName (
+/auth/getName : String name (
     "token": IdentityToken,
 )
 
-/song/upload (
+String "songId" /song/create (
     "token": IdentityToken,
-    "name": String,
-    "description": String,
-)
+) {
+    "fileExtension": String [.flac, .wav],
+    "numParts": int,
+    "name": String (1 <= length <= 50),
+    "description": String (length <= 100),
+}
+
+/song/uploadData (
+    "token": IdentityToken,
+    "songId": String,
+    "start": int,
+    "content-length": int (< 100000000 (100 MB)),
+) byte[] (length < 100000000 (100 MB))

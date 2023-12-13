@@ -2,25 +2,25 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:music_server/database/song.dart';
 import 'package:music_server/database/transcode_operation.dart';
+import 'package:music_server/database/unprocessed_song.dart';
 import 'package:music_server/music_server.dart';
 import 'package:stateless_server/stateless_server.dart';
 import 'package:uuid/uuid.dart';
 
+const maxUploadChunkBytes = 100 * 1000 * 1000;
+
 final _uuid = Uuid();
 
-FutureOr<Response> createSongHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) async {
+FutureOr<Response> songCreateHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) async {
   if (identityToken.userId == null) return Response.forbidden('');
 
   final map = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
 
-  final fileType = map['fileType'] as String?;
-  if (fileType == null) return Response.badRequest();
+  final fileExtension = map['fileExtension'] as String?;
+  if (fileExtension == null) return Response.badRequest();
 
-  final numPartsString = map['numParts'] as String?;
-  if (numPartsString == null) return Response.badRequest();
-  final numParts = int.tryParse(numPartsString);
+  final numParts = map['numParts'] as int?;
   if (numParts == null) return Response.badRequest();
 
   final name = map['name'] as String?;
@@ -39,13 +39,13 @@ FutureOr<Response> createSongHandler(Request request, MusicServerThreadData thre
     owner: owner,
     name: name,
     description: description,
-    fileType: fileType,
+    fileExtension: fileExtension,
     numParts: numParts,
   );
 
   threadData.isar.write((isar) => isar.unprocessedSongs.put(unprocessedSong));
 
-  return Response.ok('Success');
+  return Response.ok(songId);
 }
 
 bool _validateNewSongName(String name) {
@@ -65,7 +65,10 @@ bool _validateNewSongDescription(String description) {
   return true;
 }
 
-FutureOr<Response> uploadSongData(Request request, MusicServerThreadData threadData, IdentityToken identityToken) async {
+FutureOr<Response> songUploadDataHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) async {
+  final contentLength = request.contentLength;
+  if (contentLength == null || contentLength > maxUploadChunkBytes) return Response.badRequest();
+
   final songId = request.headers['songId'];
   if (songId == null) return Response.badRequest();
 
@@ -79,11 +82,20 @@ FutureOr<Response> uploadSongData(Request request, MusicServerThreadData threadD
 
   if (unprocessedSong.owner != identityToken.userId) return Response.forbidden('');
 
-  final inputPath = unprocessedSong.getInputFilePath();
+  final inputPath = getUnprocessedSongInputFilePath(threadData.paths, unprocessedSong.id, unprocessedSong.fileExtension);
 
-  final data = await request.read().fold(<int>[], (previous, element) => previous..addAll(element));
+  final data = <int>[];
+  var length = 0;
+  await for (final part in request.read()) {
+    length += part.length;
+    if (length > maxUploadChunkBytes) return Response.forbidden('');
 
-  final randomAccessFile = File(inputPath).openSync();
+    data.addAll(part);
+  }
+
+  final inputFile = File(inputPath);
+  if (!inputFile.existsSync()) inputFile.createSync(recursive: true);
+  final randomAccessFile = inputFile.openSync(mode: FileMode.writeOnlyAppend);
   randomAccessFile.setPositionSync(start);
   randomAccessFile.writeFromSync(data);
   randomAccessFile.flushSync();
@@ -91,7 +103,7 @@ FutureOr<Response> uploadSongData(Request request, MusicServerThreadData threadD
 
   unprocessedSong.numPartsReceived++;
   if (unprocessedSong.numPartsReceived >= unprocessedSong.numParts) {
-    threadData.isar.write((isar) => isar.transcodeOperations.put(TranscodeOperation(songId)));
+    threadData.isar.write((isar) => isar.transcodeOperations.put(TranscodeOperation(id: songId, timestamp: DateTime.now().toUtc())));
   } else {
     threadData.isar.write((isar) => isar.unprocessedSongs.put(unprocessedSong));
   }

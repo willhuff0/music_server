@@ -117,6 +117,7 @@ bool memEquals(Uint8List bytes1, Uint8List bytes2) {
 @embedded
 class UserActivity {
   final UserActivityType type;
+  @utc
   final DateTime timestamp;
 
   UserActivity({

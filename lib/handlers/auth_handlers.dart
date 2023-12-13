@@ -72,6 +72,8 @@ FutureOr<Response> startSessionHandler(Request request, MusicServerThreadData th
   if (password == null) return Response.badRequest();
 
   final dbUser = threadData.isar.users.get(uid);
+  print(dbUser);
+  print(uid);
   if (dbUser == null) return Response.forbidden('Authentication error');
 
   if (!await dbUser.password.checkPasswordMatch(password)) return Response.forbidden('Authentication error');

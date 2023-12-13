@@ -1449,8 +1449,7 @@ UserActivity deserializeUserActivity(IsarReader reader) {
       _timestamp =
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true).toLocal();
     } else {
-      _timestamp =
-          DateTime.fromMicrosecondsSinceEpoch(value, isUtc: true).toLocal();
+      _timestamp = DateTime.fromMicrosecondsSinceEpoch(value, isUtc: true);
     }
   }
   final object = UserActivity(

@@ -1,4 +1,6 @@
 import 'package:isar/isar.dart';
+import 'package:music_server/audio_processing.dart';
+import 'package:music_server/database/unprocessed_song.dart';
 import 'package:music_server/music_server.dart';
 import 'package:path/path.dart' as p;
 
@@ -10,6 +12,9 @@ class Song {
 
   final String owner;
 
+  @utc
+  final DateTime timestamp;
+
   final bool public;
 
   final String name;
@@ -20,6 +25,7 @@ class Song {
   Song({
     required this.id,
     required this.owner,
+    required this.timestamp,
     required this.public,
     required this.name,
     required this.description,
@@ -27,53 +33,19 @@ class Song {
   });
 
   Song.create({required this.id, required this.owner, required this.name, required this.description})
-      : public = false,
+      : timestamp = DateTime.now().toUtc(),
+        public = false,
         numPlays = 0;
 
   Song.createFromUnprocessed(UnprocessedSong unprocessedSong)
       : id = unprocessedSong.id,
         owner = unprocessedSong.owner,
+        timestamp = DateTime.now().toUtc(),
         name = unprocessedSong.name,
         description = unprocessedSong.description,
         public = false,
         numPlays = 0;
 }
 
-@collection
-class UnprocessedSong {
-  final String id;
-
-  final String owner;
-
-  final String name;
-  final String description;
-
-  final String fileType;
-
-  final int numParts;
-  int numPartsReceived;
-
-  UnprocessedSong({
-    required this.id,
-    required this.owner,
-    required this.name,
-    required this.description,
-    required this.fileType,
-    required this.numParts,
-    required this.numPartsReceived,
-  });
-
-  UnprocessedSong.create({
-    required this.id,
-    required this.owner,
-    required this.name,
-    required this.description,
-    required this.fileType,
-    required this.numParts,
-  }) : numPartsReceived = 0;
-
-  String getInputFilePath() => p.join(storagePath, 'unprocessed_songs', id, 'input.$fileType');
-
-  String getOutputOpusFilePath() => p.join(storagePath, 'unprocessed_songs', id, 'output.opus');
-  String getOutputAACFilePath() => p.join(storagePath, 'unprocessed_songs', id, 'output.aac');
-}
+String getSongStorageDir(MusicServerPaths paths, String id) => p.join(paths.storagePath, 'songs', id);
+String getSongFilePath(MusicServerPaths paths, String id, ProcessAudioPreset preset) => p.join(paths.storagePath, 'songs', id, '${preset.quality.outputFileName}${preset.format.fileExtension}');
