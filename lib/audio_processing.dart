@@ -23,28 +23,28 @@ void startDispatchingTranscodeWorkers(MusicServerPaths paths, MusicServerConfig 
     config: config,
     paths: paths,
   );
-  //final workerManagers = await Future.wait(Iterable.generate(config.numTranscodeWorkers, (index) => WorkerManager.start(workerLaunchArgs, debugName: 'Transcode Worker $index')));
+  final workerManagers = await Future.wait(Iterable.generate(config.numTranscodeWorkers, (index) => WorkerManager.start(workerLaunchArgs, debugName: 'Transcode Worker $index')));
 
   // listen for changes and dispatch work
   final workReceivedToken = randomBytesAsHexString(8);
-  //final db = openIsarDatabaseOnIsolate(paths);
+  final db = openIsarDatabaseOnIsolate(paths);
 
   var nextWorkerIndex = 0;
 
   // This pulls every transcodeOperation each time one is added NOT GOOD
-  // db.transcodeOperations.where().watch().listen((transcodeOperations) {
-  //   db.write((isar) {
-  //     for (final transcodeOperation in transcodeOperations) {
-  //       if (transcodeOperation.workReceivedToken == workReceivedToken) continue;
-  //       transcodeOperation.workReceivedToken = workReceivedToken;
-  //       isar.transcodeOperations.put(transcodeOperation);
+  db.transcodeOperations.where().watch().listen((transcodeOperations) {
+    db.write((isar) {
+      for (final transcodeOperation in transcodeOperations) {
+        if (transcodeOperation.workReceivedToken == workReceivedToken) continue;
+        transcodeOperation.workReceivedToken = workReceivedToken;
+        isar.transcodeOperations.put(transcodeOperation);
 
-  //       workerManagers[nextWorkerIndex].toIsolatePort.send(transcodeOperation);
-  //       nextWorkerIndex++;
-  //       if (nextWorkerIndex >= config.numTranscodeWorkers) nextWorkerIndex = 0;
-  //     }
-  //   });
-  // });
+        workerManagers[nextWorkerIndex].toIsolatePort.send(transcodeOperation);
+        nextWorkerIndex++;
+        if (nextWorkerIndex >= config.numTranscodeWorkers) nextWorkerIndex = 0;
+      }
+    });
+  });
 }
 
 class AudioTranscoderWorker implements Worker {
@@ -73,14 +73,14 @@ class AudioTranscoderWorker implements Worker {
     _isar.write((isar) async {
       final unprocessedSong = isar.unprocessedSongs.get(transcodeOperation.id);
       if (unprocessedSong == null) {
-        transcodeOperation.failureMessage = 'unprocessedSong ($id) database entry does not exist';
+        transcodeOperation.failureMessage = 'unprocessedSong (${transcodeOperation.id}) database entry does not exist';
         isar.transcodeOperations.put(transcodeOperation);
         return;
       }
 
       final inputFile = File(getUnprocessedSongInputFilePath(_paths, unprocessedSong.id, unprocessedSong.fileExtension));
       if (!inputFile.existsSync()) {
-        transcodeOperation.failureMessage = 'unprocessedSong ($id) input file does not exist';
+        transcodeOperation.failureMessage = 'unprocessedSong (${transcodeOperation.id}) input file does not exist';
         isar.transcodeOperations.put(transcodeOperation);
         return;
       }
@@ -102,7 +102,7 @@ class AudioTranscoderWorker implements Worker {
       );
 
       if (processResult != null) {
-        transcodeOperation.failureMessage = 'unprocessedSong ($id) failed to process: $processResult';
+        transcodeOperation.failureMessage = 'unprocessedSong (${transcodeOperation.id}) failed to process: $processResult';
         isar.transcodeOperations.put(transcodeOperation);
         return;
       }
