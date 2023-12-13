@@ -15,6 +15,7 @@ import 'package:stateless_server/stateless_server.dart';
 import 'database/song.dart';
 
 const transcodePresetsSimultaneously = true;
+const keepFailedTranscodeOperationsForMilliseconds = 365 * 24 * 60 * 60 * 1000;
 
 void startDispatchingTranscodeWorkers(MusicServerPaths paths, MusicServerConfig config) async {
   // start workers
@@ -23,37 +24,57 @@ void startDispatchingTranscodeWorkers(MusicServerPaths paths, MusicServerConfig 
     config: config,
     paths: paths,
   );
-  //final workerManagers = await Future.wait(Iterable.generate(config.numTranscodeWorkers, (index) => WorkerManager.start(workerLaunchArgs, debugName: 'Transcode Worker $index')));
+  final workerManagers = await Future.wait(Iterable.generate(config.numTranscodeWorkers, (index) => WorkerManager.start(workerLaunchArgs, debugName: 'Transcode Worker $index')));
 
-  // listen for changes and dispatch work
   final workReceivedToken = randomBytesAsHexString(8);
-  //final db = openIsarDatabaseOnIsolate(paths);
+  final listenStartTime = DateTime.timestamp().millisecondsSinceEpoch;
+
+  final isar = openIsarDatabaseOnIsolate(paths);
 
   var nextWorkerIndex = 0;
+  void onTranscodeOperationsUpdated(List<TranscodeOperation> transcodeOperations) {
+    isar.writeTxnSync(() {
+      for (final transcodeOperation in transcodeOperations) {
+        if (transcodeOperation.workReceivedToken == workReceivedToken) continue;
 
-  // This pulls every transcodeOperation each time one is added NOT GOOD
-  // db.transcodeOperations.where().watch().listen((transcodeOperations) {
-  //   db.write((isar) {
-  //     for (final transcodeOperation in transcodeOperations) {
-  //       if (transcodeOperation.workReceivedToken == workReceivedToken) continue;
-  //       transcodeOperation.workReceivedToken = workReceivedToken;
-  //       isar.transcodeOperations.put(transcodeOperation);
+        transcodeOperation.workReceivedToken = workReceivedToken;
+        isar.transcodeOperations.putSync(transcodeOperation);
 
-  //       workerManagers[nextWorkerIndex].toIsolatePort.send(transcodeOperation);
-  //       nextWorkerIndex++;
-  //       if (nextWorkerIndex >= config.numTranscodeWorkers) nextWorkerIndex = 0;
-  //     }
-  //   });
-  // });
+        workerManagers[nextWorkerIndex].toIsolatePort.send(transcodeOperation);
+        nextWorkerIndex++;
+        if (nextWorkerIndex >= config.numTranscodeWorkers) nextWorkerIndex = 0;
+      }
+    }, silent: true);
+  }
+
+  // delete all failed operations older than keepFailedTranscodeOperationsForMilliseconds milliseconds
+  isar.writeTxnSync(() {
+    for (final oldFailedTranscodeOperation in isar.transcodeOperations.where().failedEqualToTimestampLessThan(true, listenStartTime - keepFailedTranscodeOperationsForMilliseconds).findAllSync()) {
+      try {
+        Directory(p.join(paths.storagePath, 'unprocessed_songs', oldFailedTranscodeOperation.songId)).deleteSync(recursive: true);
+        isar.transcodeOperations.deleteSync(oldFailedTranscodeOperation.isarId);
+      } catch (e) {
+        print('failed to delete old failed transcode operation directory (${oldFailedTranscodeOperation.isarId}): ${oldFailedTranscodeOperation.songId}');
+      }
+    }
+  });
+
+  // start all not failed operations leftover from when the server last shutdown
+  onTranscodeOperationsUpdated(isar.transcodeOperations.where().failedEqualToAnyTimestamp(false).findAllSync());
+
+  // listen for new transcodeOperations and dispatch them to workers, this pulls a list of EVERY transcodeOperation each time one is added NOT GOOD
+  isar.transcodeOperations.where().failedEqualToTimestampGreaterThan(false, listenStartTime).watch().listen(onTranscodeOperationsUpdated);
 }
 
 class AudioTranscoderWorker implements Worker {
+  final String? _debugName;
+
   final MusicServerPaths _paths;
   final Isar _isar;
 
   late final StreamSubscription _fromManagerStreamSubscription;
 
-  AudioTranscoderWorker._(this._paths, this._isar, Stream<dynamic> fromManagerStream) {
+  AudioTranscoderWorker._(this._debugName, this._paths, this._isar, Stream<dynamic> fromManagerStream) {
     _fromManagerStreamSubscription = fromManagerStream.listen((event) {
       if (event is TranscodeOperation) {
         _transcode(event);
@@ -66,51 +87,65 @@ class AudioTranscoderWorker implements Worker {
 
     final isar = openIsarDatabaseOnIsolate(args.paths);
 
-    return AudioTranscoderWorker._(args.paths, isar, fromManagerStream);
+    return AudioTranscoderWorker._(debugName, args.paths, isar, fromManagerStream);
   }
 
   Future<void> _transcode(TranscodeOperation transcodeOperation) async {
-    _isar.write((isar) async {
-      final unprocessedSong = isar.unprocessedSongs.get(transcodeOperation.id);
-      if (unprocessedSong == null) {
-        transcodeOperation.failureMessage = 'unprocessedSong ($id) database entry does not exist';
-        isar.transcodeOperations.put(transcodeOperation);
-        return;
-      }
+    print('[$_debugName] starting transcode operation (${transcodeOperation.isarId}): ${transcodeOperation.songId}');
 
-      final inputFile = File(getUnprocessedSongInputFilePath(_paths, unprocessedSong.id, unprocessedSong.fileExtension));
-      if (!inputFile.existsSync()) {
-        transcodeOperation.failureMessage = 'unprocessedSong ($id) input file does not exist';
-        isar.transcodeOperations.put(transcodeOperation);
-        return;
-      }
+    final unprocessedSong = _isar.unprocessedSongs.getByIdSync(transcodeOperation.songId);
+    if (unprocessedSong == null) {
+      transcodeOperation.failureMessage = 'database entry does not exist';
+      transcodeOperation.failed = true;
+      _isar.writeTxnSync(() => _isar.transcodeOperations.putSync(transcodeOperation));
+      return;
+    }
 
-      final outputDir = getSongStorageDir(_paths, unprocessedSong.id);
+    final inputFile = File(getUnprocessedSongInputFilePath(_paths, unprocessedSong.id, unprocessedSong.fileExtension));
+    if (!inputFile.existsSync()) {
+      transcodeOperation.failureMessage = 'input file does not exist';
+      transcodeOperation.failed = true;
+      _isar.writeTxnSync(() => _isar.transcodeOperations.putSync(transcodeOperation));
+      return;
+    }
 
-      final processResult = await processAudio(
-        paths: _paths,
-        inputFile: inputFile.path,
-        outputDir: outputDir,
-        presets: [
-          ProcessAudioPreset(format: CompressedAudioFormat.opus, quality: CompressedAudioQuality.low),
-          ProcessAudioPreset(format: CompressedAudioFormat.opus, quality: CompressedAudioQuality.medium),
-          ProcessAudioPreset(format: CompressedAudioFormat.opus, quality: CompressedAudioQuality.high),
-          ProcessAudioPreset(format: CompressedAudioFormat.aac, quality: CompressedAudioQuality.low),
-          ProcessAudioPreset(format: CompressedAudioFormat.aac, quality: CompressedAudioQuality.medium),
-          ProcessAudioPreset(format: CompressedAudioFormat.aac, quality: CompressedAudioQuality.high),
-        ],
-      );
+    final outputDir = getSongStorageDir(_paths, unprocessedSong.id);
 
-      if (processResult != null) {
-        transcodeOperation.failureMessage = 'unprocessedSong ($id) failed to process: $processResult';
-        isar.transcodeOperations.put(transcodeOperation);
-        return;
-      }
+    final processResult = await processAudio(
+      paths: _paths,
+      inputFile: inputFile.path,
+      outputDir: outputDir,
+      presets: [
+        ProcessAudioPreset(format: CompressedAudioFormat.opus, quality: CompressedAudioQuality.low),
+        ProcessAudioPreset(format: CompressedAudioFormat.opus, quality: CompressedAudioQuality.medium),
+        ProcessAudioPreset(format: CompressedAudioFormat.opus, quality: CompressedAudioQuality.high),
+        ProcessAudioPreset(format: CompressedAudioFormat.aac, quality: CompressedAudioQuality.low),
+        ProcessAudioPreset(format: CompressedAudioFormat.aac, quality: CompressedAudioQuality.medium),
+        ProcessAudioPreset(format: CompressedAudioFormat.aac, quality: CompressedAudioQuality.high),
+      ],
+    );
 
-      isar.transcodeOperations.delete(transcodeOperation.id);
-      isar.unprocessedSongs.delete(unprocessedSong.id);
+    if (processResult != null) {
+      transcodeOperation.failureMessage = 'failed to process: $processResult';
+      transcodeOperation.failed = true;
+      _isar.writeTxnSync(() => _isar.transcodeOperations.putSync(transcodeOperation));
+      return;
+    }
 
-      isar.songs.put(Song.createFromUnprocessed(unprocessedSong));
+    try {
+      inputFile.parent.deleteSync(recursive: true);
+    } catch (e) {
+      transcodeOperation.failureMessage = 'failed to delete input directory: $e';
+      transcodeOperation.failed = true;
+      _isar.writeTxnSync(() => _isar.transcodeOperations.putSync(transcodeOperation));
+      return;
+    }
+
+    _isar.writeTxnSync(() {
+      _isar.transcodeOperations.deleteSync(transcodeOperation.isarId);
+      _isar.unprocessedSongs.deleteByIdSync(unprocessedSong.id);
+
+      _isar.songs.putByIdSync(Song.createFromUnprocessed(unprocessedSong));
     });
   }
 
@@ -163,7 +198,7 @@ class ProcessAudioPreset {
   ProcessAudioPreset({required this.format, required this.quality});
 
   @override
-  String toString() => '{format: $format, quality: $quality}';
+  String toString() => '{${format.name}, ${quality.name}}';
 }
 
 String getOutputFilePath(String dir, ProcessAudioPreset preset) => p.join(dir, '${preset.quality.outputFileName}${preset.format.fileExtension}');
@@ -231,8 +266,8 @@ Future<String?> processAudio({required MusicServerPaths paths, required String i
         final outputFile = getOutputFilePath(outputDir, preset);
 
         final encodeParameters = switch (preset.format) {
-          CompressedAudioFormat.opus => ['-i', intermediateInputFile, '-y', '-v', 'quiet', '-progress', '-', '-codec:a', 'libopus', '-mapping_family', '0', '-b:a', (preset.quality.opuskbpsPerChannel * 1000 * inputAudioChannelCount).toString(), outputFile],
-          CompressedAudioFormat.aac => ['-i', intermediateInputFile, '-y', '-v', 'quiet', '-progress', '-', '-codec:a', 'libfdk_aac', '-vbr', preset.quality.aacVBRMode.toString(), outputFile],
+          CompressedAudioFormat.opus => ['-i', intermediateInputFile, '-y', '-v', 'warning', '-progress', '-', '-codec:a', 'libopus', '-mapping_family', '0', '-b:a', (preset.quality.opuskbpsPerChannel * 1000 * inputAudioChannelCount).toString(), outputFile],
+          CompressedAudioFormat.aac => ['-i', intermediateInputFile, '-y', '-v', 'warning', '-progress', '-', '-codec:a', 'libfdk_aac', '-vbr', preset.quality.aacVBRMode.toString(), outputFile],
         };
         final transcodeResult = await Process.run(paths.ffmpegPath, encodeParameters);
         if (transcodeResult.exitCode != 0) return 'ffmpeg transcode on preset $preset exited with an error (${transcodeResult.exitCode}): ${transcodeResult.stderr}';
@@ -246,6 +281,8 @@ Future<String?> processAudio({required MusicServerPaths paths, required String i
           if (await outputFileObject.exists()) await outputFileObject.delete();
         }
       }
+
+      await Directory(outputDir).create(recursive: true);
 
       try {
         if (transcodePresetsSimultaneously) {

@@ -6,6 +6,9 @@ part 'unprocessed_song.g.dart';
 
 @collection
 class UnprocessedSong {
+  Id isarId;
+
+  @Index(unique: true)
   final String id;
 
   final String owner;
@@ -19,6 +22,7 @@ class UnprocessedSong {
   int numPartsReceived;
 
   UnprocessedSong({
+    this.isarId = Isar.autoIncrement,
     required this.id,
     required this.owner,
     required this.name,
@@ -29,6 +33,7 @@ class UnprocessedSong {
   });
 
   UnprocessedSong.create({
+    this.isarId = Isar.autoIncrement,
     required this.id,
     required this.owner,
     required this.name,

@@ -8,14 +8,14 @@ part 'song.g.dart';
 
 @collection
 class Song {
+  Id isarId;
+
+  @Index(unique: true)
   final String id;
 
   final String owner;
 
-  @utc
   final DateTime timestamp;
-
-  final bool public;
 
   final String name;
   final String description;
@@ -23,27 +23,25 @@ class Song {
   final int numPlays;
 
   Song({
+    this.isarId = Isar.autoIncrement,
     required this.id,
     required this.owner,
     required this.timestamp,
-    required this.public,
     required this.name,
     required this.description,
     this.numPlays = 0,
   });
 
-  Song.create({required this.id, required this.owner, required this.name, required this.description})
+  Song.create({this.isarId = Isar.autoIncrement, required this.id, required this.owner, required this.name, required this.description})
       : timestamp = DateTime.now().toUtc(),
-        public = false,
         numPlays = 0;
 
-  Song.createFromUnprocessed(UnprocessedSong unprocessedSong)
+  Song.createFromUnprocessed(UnprocessedSong unprocessedSong, {this.isarId = Isar.autoIncrement})
       : id = unprocessedSong.id,
         owner = unprocessedSong.owner,
         timestamp = DateTime.now().toUtc(),
         name = unprocessedSong.name,
         description = unprocessedSong.description,
-        public = false,
         numPlays = 0;
 }
 

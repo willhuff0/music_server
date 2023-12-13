@@ -4,18 +4,24 @@ part 'transcode_operation.g.dart';
 
 @collection
 class TranscodeOperation {
-  final String id;
-  @utc
-  final DateTime timestamp;
+  Id isarId;
+
+  final String songId;
+
+  final int timestamp;
 
   String? workReceivedToken;
 
+  @Index(composite: [CompositeIndex('timestamp')])
+  bool failed;
   String? failureMessage;
 
   TranscodeOperation({
-    required this.id,
+    this.isarId = Isar.autoIncrement,
+    required this.songId,
     required this.timestamp,
     this.workReceivedToken,
+    this.failed = false,
     this.failureMessage,
   });
 }

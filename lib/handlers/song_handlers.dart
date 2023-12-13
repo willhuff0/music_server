@@ -43,7 +43,7 @@ FutureOr<Response> songCreateHandler(Request request, MusicServerThreadData thre
     numParts: numParts,
   );
 
-  threadData.isar.write((isar) => isar.unprocessedSongs.put(unprocessedSong));
+  threadData.isar.writeTxnSync(() => threadData.isar.unprocessedSongs.putByIdSync(unprocessedSong));
 
   return Response.ok(songId);
 }
@@ -77,7 +77,7 @@ FutureOr<Response> songUploadDataHandler(Request request, MusicServerThreadData 
   final start = int.tryParse(startString);
   if (start == null) return Response.badRequest();
 
-  final unprocessedSong = threadData.isar.unprocessedSongs.get(songId);
+  final unprocessedSong = threadData.isar.unprocessedSongs.getByIdSync(songId);
   if (unprocessedSong == null) return Response.notFound('');
 
   if (unprocessedSong.owner != identityToken.userId) return Response.forbidden('');
@@ -103,9 +103,9 @@ FutureOr<Response> songUploadDataHandler(Request request, MusicServerThreadData 
 
   unprocessedSong.numPartsReceived++;
   if (unprocessedSong.numPartsReceived >= unprocessedSong.numParts) {
-    threadData.isar.write((isar) => isar.transcodeOperations.put(TranscodeOperation(id: songId, timestamp: DateTime.now().toUtc())));
+    threadData.isar.writeTxnSync(() => threadData.isar.transcodeOperations.putSync(TranscodeOperation(songId: songId, timestamp: DateTime.timestamp().millisecondsSinceEpoch)));
   } else {
-    threadData.isar.write((isar) => isar.unprocessedSongs.put(unprocessedSong));
+    threadData.isar.writeTxnSync(() => threadData.isar.unprocessedSongs.putByIdSync(unprocessedSong));
   }
 
   return Response.ok('');

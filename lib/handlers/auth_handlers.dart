@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:email_validator/email_validator.dart';
 import 'package:music_server/database/user.dart';
+import 'package:music_server/database/user_activity.dart';
 import 'package:music_server/music_server.dart';
 import 'package:stateless_server/stateless_server.dart';
 import 'package:uuid/data.dart';
@@ -37,8 +38,13 @@ FutureOr<Response> createUserHandler(Request request, MusicServerThreadData thre
 
   final clientIpAddress = (request.context['shelf.io.connection_info'] as HttpConnectionInfo?)?.remoteAddress;
   final clientUserAgent = request.headers['User-Agent'];
-  final encodedToken = await dbUser.startSession(threadData, clientIpAddress, clientUserAgent);
+  final encodedToken = dbUser.startSession(threadData.identityTokenAuthority, clientIpAddress, clientUserAgent);
   // dbUser is added to database inside this ^ call so no need to do it in this scope
+
+  threadData.isar.writeTxnSync(() {
+    threadData.isar.users.putSync(dbUser);
+    threadData.isar.userActivities.putSync(UserActivity.now(userId, UserActivityType.createUserAndStartSession));
+  });
 
   return Response.ok('Success', headers: {'token': encodedToken});
 }
@@ -71,16 +77,16 @@ FutureOr<Response> startSessionHandler(Request request, MusicServerThreadData th
   final password = request.headers['password'];
   if (password == null) return Response.badRequest();
 
-  final dbUser = threadData.isar.users.get(uid);
-  print(dbUser);
-  print(uid);
+  final dbUser = threadData.isar.users.getByIdSync(uid);
   if (dbUser == null) return Response.forbidden('Authentication error');
 
   if (!await dbUser.password.checkPasswordMatch(password)) return Response.forbidden('Authentication error');
 
   final clientIpAddress = (request.context['shelf.io.connection_info'] as HttpConnectionInfo?)?.remoteAddress;
   final clientUserAgent = request.headers['User-Agent'];
-  final encodedToken = await dbUser.startSession(threadData, clientIpAddress, clientUserAgent);
+  final encodedToken = dbUser.startSession(threadData.identityTokenAuthority, clientIpAddress, clientUserAgent);
+
+  threadData.isar.writeTxnSync(() => threadData.isar.userActivities.putSync(UserActivity.now(uid, UserActivityType.startSession)));
 
   return Response.ok('Success', headers: {'token': encodedToken});
 }
@@ -88,7 +94,7 @@ FutureOr<Response> startSessionHandler(Request request, MusicServerThreadData th
 FutureOr<Response> getNameHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) async {
   if (identityToken.userId == null) return Response.ok('You are logged in anonymously.');
 
-  final dbUser = threadData.isar.users.get(identityToken.userId!);
+  final dbUser = threadData.isar.users.getByIdSync(identityToken.userId!);
   if (dbUser == null) return Response.forbidden('Authentication error');
 
   return Response.ok('Your are logged in as ${dbUser.name}');

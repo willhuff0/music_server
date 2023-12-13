@@ -4,13 +4,15 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:isar/isar.dart';
-import 'package:music_server/music_server.dart';
 import 'package:stateless_server/stateless_server.dart';
 
 part 'user.g.dart';
 
 @collection
 class User {
+  Id isarId;
+
+  @Index(unique: true)
   final String id;
 
   final String name;
@@ -18,14 +20,12 @@ class User {
 
   final HashedUserPassword password;
 
-  final List<UserActivity> activities;
-
   User({
+    this.isarId = Isar.autoIncrement,
     required this.id,
     required this.name,
     required this.email,
     required this.password,
-    this.activities = const [],
   });
 
   static User create({
@@ -39,16 +39,11 @@ class User {
         name: name,
         email: email,
         password: password,
-        activities: [UserActivity.now(UserActivityType.createUser)],
       );
 
-  Future<String> startSession(MusicServerThreadData threadData, InternetAddress? ipAddress, String? userAgent) async {
+  String startSession(IdentityTokenAuthority identityTokenAuthority, InternetAddress? ipAddress, String? userAgent) {
     final identityToken = IdentityToken(id, ipAddress, userAgent);
-    final encodedToken = threadData.identityTokenAuthority.signAndEncodeToken(identityToken);
-
-    activities.add(UserActivity.now(UserActivityType.startSession));
-    threadData.isar.write((isar) => isar.users.put(this));
-
+    final encodedToken = identityTokenAuthority.signAndEncodeToken(identityToken);
     return encodedToken;
   }
 }
@@ -63,12 +58,12 @@ final _passwordHashingAlgorithm = Argon2id(
 
 @embedded
 class HashedUserPassword {
-  final List<int> nonce;
-  final List<int> hash;
+  final List<byte> nonce;
+  final List<byte> hash;
 
   HashedUserPassword({
-    required this.nonce,
-    required this.hash,
+    this.nonce = const [],
+    this.hash = const [],
   });
 
   static Future<HashedUserPassword> createNew(String password) async {
@@ -112,23 +107,4 @@ bool memEquals(Uint8List bytes1, Uint8List bytes2) {
   }
 
   return true;
-}
-
-@embedded
-class UserActivity {
-  final UserActivityType type;
-  @utc
-  final DateTime timestamp;
-
-  UserActivity({
-    required this.type,
-    required this.timestamp,
-  });
-
-  static UserActivity now(UserActivityType type) => UserActivity(type: type, timestamp: DateTime.now().toUtc());
-}
-
-enum UserActivityType {
-  createUser,
-  startSession,
 }

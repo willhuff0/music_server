@@ -4,6 +4,7 @@ import 'package:isar/isar.dart';
 import 'package:music_server/database/song.dart';
 import 'package:music_server/database/transcode_operation.dart';
 import 'package:music_server/database/unprocessed_song.dart';
+import 'package:music_server/database/user_activity.dart';
 import 'package:music_server/handlers/auth_handlers.dart';
 import 'package:music_server/handlers/song_handlers.dart';
 import 'package:stateless_server/stateless_server.dart';
@@ -26,9 +27,10 @@ class MusicServerConfig extends ServerConfig {
   });
 }
 
-Isar openIsarDatabaseOnIsolate(MusicServerPaths paths, {bool inspector = false}) => Isar.open(
-      schemas: [
+Isar openIsarDatabaseOnIsolate(MusicServerPaths paths, {bool inspector = false}) => Isar.openSync(
+      [
         UserSchema,
+        UserActivitySchema,
         SongSchema,
         UnprocessedSongSchema,
         TranscodeOperationSchema,

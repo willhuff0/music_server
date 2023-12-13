@@ -3,739 +3,426 @@
 part of 'transcode_operation.dart';
 
 // **************************************************************************
-// _IsarCollectionGenerator
+// IsarCollectionGenerator
 // **************************************************************************
 
 // coverage:ignore-file
-// ignore_for_file: duplicate_ignore, invalid_use_of_protected_member, lines_longer_than_80_chars, constant_identifier_names, avoid_js_rounded_ints, no_leading_underscores_for_local_identifiers, require_trailing_commas, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_in_if_null_operators, library_private_types_in_public_api, prefer_const_constructors
-// ignore_for_file: type=lint
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
 
 extension GetTranscodeOperationCollection on Isar {
-  IsarCollection<String, TranscodeOperation> get transcodeOperations =>
+  IsarCollection<TranscodeOperation> get transcodeOperations =>
       this.collection();
 }
 
-const TranscodeOperationSchema = IsarGeneratedSchema(
-  schema: IsarSchema(
-    name: 'TranscodeOperation',
-    idName: 'id',
-    embedded: false,
-    properties: [
-      IsarPropertySchema(
-        name: 'id',
-        type: IsarType.string,
-      ),
-      IsarPropertySchema(
-        name: 'timestamp',
-        type: IsarType.dateTime,
-      ),
-      IsarPropertySchema(
-        name: 'workReceivedToken',
-        type: IsarType.string,
-      ),
-      IsarPropertySchema(
-        name: 'failureMessage',
-        type: IsarType.string,
-      ),
-    ],
-    indexes: [],
-  ),
-  converter: IsarObjectConverter<String, TranscodeOperation>(
-    serialize: serializeTranscodeOperation,
-    deserialize: deserializeTranscodeOperation,
-    deserializeProperty: deserializeTranscodeOperationProp,
-  ),
-  embeddedSchemas: [],
+const TranscodeOperationSchema = CollectionSchema(
+  name: r'TranscodeOperation',
+  id: 7716398672627590605,
+  properties: {
+    r'failed': PropertySchema(
+      id: 0,
+      name: r'failed',
+      type: IsarType.bool,
+    ),
+    r'failureMessage': PropertySchema(
+      id: 1,
+      name: r'failureMessage',
+      type: IsarType.string,
+    ),
+    r'songId': PropertySchema(
+      id: 2,
+      name: r'songId',
+      type: IsarType.string,
+    ),
+    r'timestamp': PropertySchema(
+      id: 3,
+      name: r'timestamp',
+      type: IsarType.long,
+    ),
+    r'workReceivedToken': PropertySchema(
+      id: 4,
+      name: r'workReceivedToken',
+      type: IsarType.string,
+    )
+  },
+  estimateSize: _transcodeOperationEstimateSize,
+  serialize: _transcodeOperationSerialize,
+  deserialize: _transcodeOperationDeserialize,
+  deserializeProp: _transcodeOperationDeserializeProp,
+  idName: r'isarId',
+  indexes: {
+    r'failed_timestamp': IndexSchema(
+      id: -5132437931030169147,
+      name: r'failed_timestamp',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'failed',
+          type: IndexType.value,
+          caseSensitive: false,
+        ),
+        IndexPropertySchema(
+          name: r'timestamp',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    )
+  },
+  links: {},
+  embeddedSchemas: {},
+  getId: _transcodeOperationGetId,
+  getLinks: _transcodeOperationGetLinks,
+  attach: _transcodeOperationAttach,
+  version: '3.1.0+1',
 );
 
-@isarProtected
-int serializeTranscodeOperation(IsarWriter writer, TranscodeOperation object) {
-  IsarCore.writeString(writer, 1, object.id);
-  IsarCore.writeLong(
-      writer, 2, object.timestamp.toUtc().microsecondsSinceEpoch);
-  {
-    final value = object.workReceivedToken;
-    if (value == null) {
-      IsarCore.writeNull(writer, 3);
-    } else {
-      IsarCore.writeString(writer, 3, value);
-    }
-  }
+int _transcodeOperationEstimateSize(
+  TranscodeOperation object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
   {
     final value = object.failureMessage;
-    if (value == null) {
-      IsarCore.writeNull(writer, 4);
-    } else {
-      IsarCore.writeString(writer, 4, value);
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
     }
   }
-  return Isar.fastHash(object.id);
+  bytesCount += 3 + object.songId.length * 3;
+  {
+    final value = object.workReceivedToken;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  return bytesCount;
 }
 
-@isarProtected
-TranscodeOperation deserializeTranscodeOperation(IsarReader reader) {
-  final String _id;
-  _id = IsarCore.readString(reader, 1) ?? '';
-  final DateTime _timestamp;
-  {
-    final value = IsarCore.readLong(reader, 2);
-    if (value == -9223372036854775808) {
-      _timestamp =
-          DateTime.fromMillisecondsSinceEpoch(0, isUtc: true).toLocal();
-    } else {
-      _timestamp = DateTime.fromMicrosecondsSinceEpoch(value, isUtc: true);
-    }
-  }
-  final String? _workReceivedToken;
-  _workReceivedToken = IsarCore.readString(reader, 3);
-  final String? _failureMessage;
-  _failureMessage = IsarCore.readString(reader, 4);
+void _transcodeOperationSerialize(
+  TranscodeOperation object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeBool(offsets[0], object.failed);
+  writer.writeString(offsets[1], object.failureMessage);
+  writer.writeString(offsets[2], object.songId);
+  writer.writeLong(offsets[3], object.timestamp);
+  writer.writeString(offsets[4], object.workReceivedToken);
+}
+
+TranscodeOperation _transcodeOperationDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
   final object = TranscodeOperation(
-    id: _id,
-    timestamp: _timestamp,
-    workReceivedToken: _workReceivedToken,
-    failureMessage: _failureMessage,
+    failed: reader.readBoolOrNull(offsets[0]) ?? false,
+    failureMessage: reader.readStringOrNull(offsets[1]),
+    isarId: id,
+    songId: reader.readString(offsets[2]),
+    timestamp: reader.readLong(offsets[3]),
+    workReceivedToken: reader.readStringOrNull(offsets[4]),
   );
   return object;
 }
 
-@isarProtected
-dynamic deserializeTranscodeOperationProp(IsarReader reader, int property) {
-  switch (property) {
+P _transcodeOperationDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 1:
-      return IsarCore.readString(reader, 1) ?? '';
+      return (reader.readStringOrNull(offset)) as P;
     case 2:
-      {
-        final value = IsarCore.readLong(reader, 2);
-        if (value == -9223372036854775808) {
-          return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true).toLocal();
-        } else {
-          return DateTime.fromMicrosecondsSinceEpoch(value, isUtc: true);
-        }
-      }
+      return (reader.readString(offset)) as P;
     case 3:
-      return IsarCore.readString(reader, 3);
+      return (reader.readLong(offset)) as P;
     case 4:
-      return IsarCore.readString(reader, 4);
+      return (reader.readStringOrNull(offset)) as P;
     default:
-      throw ArgumentError('Unknown property: $property');
+      throw IsarError('Unknown property with id $propertyId');
   }
 }
 
-sealed class _TranscodeOperationUpdate {
-  bool call({
-    required String id,
-    DateTime? timestamp,
-    String? workReceivedToken,
-    String? failureMessage,
-  });
+Id _transcodeOperationGetId(TranscodeOperation object) {
+  return object.isarId;
 }
 
-class _TranscodeOperationUpdateImpl implements _TranscodeOperationUpdate {
-  const _TranscodeOperationUpdateImpl(this.collection);
+List<IsarLinkBase<dynamic>> _transcodeOperationGetLinks(
+    TranscodeOperation object) {
+  return [];
+}
 
-  final IsarCollection<String, TranscodeOperation> collection;
+void _transcodeOperationAttach(
+    IsarCollection<dynamic> col, Id id, TranscodeOperation object) {
+  object.isarId = id;
+}
 
-  @override
-  bool call({
-    required String id,
-    Object? timestamp = ignore,
-    Object? workReceivedToken = ignore,
-    Object? failureMessage = ignore,
-  }) {
-    return collection.updateProperties([
-          id
-        ], {
-          if (timestamp != ignore) 2: timestamp as DateTime?,
-          if (workReceivedToken != ignore) 3: workReceivedToken as String?,
-          if (failureMessage != ignore) 4: failureMessage as String?,
-        }) >
-        0;
+extension TranscodeOperationQueryWhereSort
+    on QueryBuilder<TranscodeOperation, TranscodeOperation, QWhere> {
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhere>
+      anyIsarId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(const IdWhereClause.any());
+    });
   }
-}
 
-sealed class _TranscodeOperationUpdateAll {
-  int call({
-    required List<String> id,
-    DateTime? timestamp,
-    String? workReceivedToken,
-    String? failureMessage,
-  });
-}
-
-class _TranscodeOperationUpdateAllImpl implements _TranscodeOperationUpdateAll {
-  const _TranscodeOperationUpdateAllImpl(this.collection);
-
-  final IsarCollection<String, TranscodeOperation> collection;
-
-  @override
-  int call({
-    required List<String> id,
-    Object? timestamp = ignore,
-    Object? workReceivedToken = ignore,
-    Object? failureMessage = ignore,
-  }) {
-    return collection.updateProperties(id, {
-      if (timestamp != ignore) 2: timestamp as DateTime?,
-      if (workReceivedToken != ignore) 3: workReceivedToken as String?,
-      if (failureMessage != ignore) 4: failureMessage as String?,
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhere>
+      anyFailedTimestamp() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'failed_timestamp'),
+      );
     });
   }
 }
 
-extension TranscodeOperationUpdate
-    on IsarCollection<String, TranscodeOperation> {
-  _TranscodeOperationUpdate get update => _TranscodeOperationUpdateImpl(this);
-
-  _TranscodeOperationUpdateAll get updateAll =>
-      _TranscodeOperationUpdateAllImpl(this);
-}
-
-sealed class _TranscodeOperationQueryUpdate {
-  int call({
-    DateTime? timestamp,
-    String? workReceivedToken,
-    String? failureMessage,
-  });
-}
-
-class _TranscodeOperationQueryUpdateImpl
-    implements _TranscodeOperationQueryUpdate {
-  const _TranscodeOperationQueryUpdateImpl(this.query, {this.limit});
-
-  final IsarQuery<TranscodeOperation> query;
-  final int? limit;
-
-  @override
-  int call({
-    Object? timestamp = ignore,
-    Object? workReceivedToken = ignore,
-    Object? failureMessage = ignore,
-  }) {
-    return query.updateProperties(limit: limit, {
-      if (timestamp != ignore) 2: timestamp as DateTime?,
-      if (workReceivedToken != ignore) 3: workReceivedToken as String?,
-      if (failureMessage != ignore) 4: failureMessage as String?,
+extension TranscodeOperationQueryWhere
+    on QueryBuilder<TranscodeOperation, TranscodeOperation, QWhereClause> {
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhereClause>
+      isarIdEqualTo(Id isarId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IdWhereClause.between(
+        lower: isarId,
+        upper: isarId,
+      ));
     });
   }
-}
 
-extension TranscodeOperationQueryUpdate on IsarQuery<TranscodeOperation> {
-  _TranscodeOperationQueryUpdate get updateFirst =>
-      _TranscodeOperationQueryUpdateImpl(this, limit: 1);
-
-  _TranscodeOperationQueryUpdate get updateAll =>
-      _TranscodeOperationQueryUpdateImpl(this);
-}
-
-class _TranscodeOperationQueryBuilderUpdateImpl
-    implements _TranscodeOperationQueryUpdate {
-  const _TranscodeOperationQueryBuilderUpdateImpl(this.query, {this.limit});
-
-  final QueryBuilder<TranscodeOperation, TranscodeOperation, QOperations> query;
-  final int? limit;
-
-  @override
-  int call({
-    Object? timestamp = ignore,
-    Object? workReceivedToken = ignore,
-    Object? failureMessage = ignore,
-  }) {
-    final q = query.build();
-    try {
-      return q.updateProperties(limit: limit, {
-        if (timestamp != ignore) 2: timestamp as DateTime?,
-        if (workReceivedToken != ignore) 3: workReceivedToken as String?,
-        if (failureMessage != ignore) 4: failureMessage as String?,
-      });
-    } finally {
-      q.close();
-    }
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhereClause>
+      isarIdNotEqualTo(Id isarId) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IdWhereClause.lessThan(upper: isarId, includeUpper: false),
+            )
+            .addWhereClause(
+              IdWhereClause.greaterThan(lower: isarId, includeLower: false),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IdWhereClause.greaterThan(lower: isarId, includeLower: false),
+            )
+            .addWhereClause(
+              IdWhereClause.lessThan(upper: isarId, includeUpper: false),
+            );
+      }
+    });
   }
-}
 
-extension TranscodeOperationQueryBuilderUpdate
-    on QueryBuilder<TranscodeOperation, TranscodeOperation, QOperations> {
-  _TranscodeOperationQueryUpdate get updateFirst =>
-      _TranscodeOperationQueryBuilderUpdateImpl(this, limit: 1);
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhereClause>
+      isarIdGreaterThan(Id isarId, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.greaterThan(lower: isarId, includeLower: include),
+      );
+    });
+  }
 
-  _TranscodeOperationQueryUpdate get updateAll =>
-      _TranscodeOperationQueryBuilderUpdateImpl(this);
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhereClause>
+      isarIdLessThan(Id isarId, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IdWhereClause.lessThan(upper: isarId, includeUpper: include),
+      );
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhereClause>
+      isarIdBetween(
+    Id lowerIsarId,
+    Id upperIsarId, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IdWhereClause.between(
+        lower: lowerIsarId,
+        includeLower: includeLower,
+        upper: upperIsarId,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhereClause>
+      failedEqualToAnyTimestamp(bool failed) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'failed_timestamp',
+        value: [failed],
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhereClause>
+      failedNotEqualToAnyTimestamp(bool failed) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'failed_timestamp',
+              lower: [],
+              upper: [failed],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'failed_timestamp',
+              lower: [failed],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'failed_timestamp',
+              lower: [failed],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'failed_timestamp',
+              lower: [],
+              upper: [failed],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhereClause>
+      failedTimestampEqualTo(bool failed, int timestamp) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'failed_timestamp',
+        value: [failed, timestamp],
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhereClause>
+      failedEqualToTimestampNotEqualTo(bool failed, int timestamp) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'failed_timestamp',
+              lower: [failed],
+              upper: [failed, timestamp],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'failed_timestamp',
+              lower: [failed, timestamp],
+              includeLower: false,
+              upper: [failed],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'failed_timestamp',
+              lower: [failed, timestamp],
+              includeLower: false,
+              upper: [failed],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'failed_timestamp',
+              lower: [failed],
+              upper: [failed, timestamp],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhereClause>
+      failedEqualToTimestampGreaterThan(
+    bool failed,
+    int timestamp, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'failed_timestamp',
+        lower: [failed, timestamp],
+        includeLower: include,
+        upper: [failed],
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhereClause>
+      failedEqualToTimestampLessThan(
+    bool failed,
+    int timestamp, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'failed_timestamp',
+        lower: [failed],
+        upper: [failed, timestamp],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhereClause>
+      failedEqualToTimestampBetween(
+    bool failed,
+    int lowerTimestamp,
+    int upperTimestamp, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'failed_timestamp',
+        lower: [failed, lowerTimestamp],
+        includeLower: includeLower,
+        upper: [failed, upperTimestamp],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension TranscodeOperationQueryFilter
     on QueryBuilder<TranscodeOperation, TranscodeOperation, QFilterCondition> {
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      idEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+      failedEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        EqualCondition(
-          property: 1,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      idGreaterThan(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        GreaterCondition(
-          property: 1,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      idGreaterThanOrEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        GreaterOrEqualCondition(
-          property: 1,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      idLessThan(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        LessCondition(
-          property: 1,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      idLessThanOrEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        LessOrEqualCondition(
-          property: 1,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      idBetween(
-    String lower,
-    String upper, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        BetweenCondition(
-          property: 1,
-          lower: lower,
-          upper: upper,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      idStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        StartsWithCondition(
-          property: 1,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      idEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        EndsWithCondition(
-          property: 1,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      idContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        ContainsCondition(
-          property: 1,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      idMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        MatchesCondition(
-          property: 1,
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      idIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const EqualCondition(
-          property: 1,
-          value: '',
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      idIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const GreaterCondition(
-          property: 1,
-          value: '',
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      timestampEqualTo(
-    DateTime value,
-  ) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        EqualCondition(
-          property: 2,
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      timestampGreaterThan(
-    DateTime value,
-  ) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        GreaterCondition(
-          property: 2,
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      timestampGreaterThanOrEqualTo(
-    DateTime value,
-  ) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        GreaterOrEqualCondition(
-          property: 2,
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      timestampLessThan(
-    DateTime value,
-  ) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        LessCondition(
-          property: 2,
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      timestampLessThanOrEqualTo(
-    DateTime value,
-  ) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        LessOrEqualCondition(
-          property: 2,
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      timestampBetween(
-    DateTime lower,
-    DateTime upper,
-  ) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        BetweenCondition(
-          property: 2,
-          lower: lower,
-          upper: upper,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      workReceivedTokenIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const IsNullCondition(property: 3));
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      workReceivedTokenIsNotNull() {
-    return QueryBuilder.apply(not(), (query) {
-      return query.addFilterCondition(const IsNullCondition(property: 3));
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      workReceivedTokenEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        EqualCondition(
-          property: 3,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      workReceivedTokenGreaterThan(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        GreaterCondition(
-          property: 3,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      workReceivedTokenGreaterThanOrEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        GreaterOrEqualCondition(
-          property: 3,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      workReceivedTokenLessThan(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        LessCondition(
-          property: 3,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      workReceivedTokenLessThanOrEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        LessOrEqualCondition(
-          property: 3,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      workReceivedTokenBetween(
-    String? lower,
-    String? upper, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        BetweenCondition(
-          property: 3,
-          lower: lower,
-          upper: upper,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      workReceivedTokenStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        StartsWithCondition(
-          property: 3,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      workReceivedTokenEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        EndsWithCondition(
-          property: 3,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      workReceivedTokenContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        ContainsCondition(
-          property: 3,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      workReceivedTokenMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        MatchesCondition(
-          property: 3,
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      workReceivedTokenIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const EqualCondition(
-          property: 3,
-          value: '',
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      workReceivedTokenIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const GreaterCondition(
-          property: 3,
-          value: '',
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'failed',
+        value: value,
+      ));
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
       failureMessageIsNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const IsNullCondition(property: 4));
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'failureMessage',
+      ));
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
       failureMessageIsNotNull() {
-    return QueryBuilder.apply(not(), (query) {
-      return query.addFilterCondition(const IsNullCondition(property: 4));
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'failureMessage',
+      ));
     });
   }
 
@@ -745,77 +432,43 @@ extension TranscodeOperationQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        EqualCondition(
-          property: 4,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'failureMessage',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
       failureMessageGreaterThan(
     String? value, {
+    bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        GreaterCondition(
-          property: 4,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      failureMessageGreaterThanOrEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        GreaterOrEqualCondition(
-          property: 4,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'failureMessage',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
       failureMessageLessThan(
     String? value, {
+    bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        LessCondition(
-          property: 4,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      failureMessageLessThanOrEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        LessOrEqualCondition(
-          property: 4,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'failureMessage',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
@@ -823,17 +476,19 @@ extension TranscodeOperationQueryFilter
       failureMessageBetween(
     String? lower,
     String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        BetweenCondition(
-          property: 4,
-          lower: lower,
-          upper: upper,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'failureMessage',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
@@ -843,13 +498,11 @@ extension TranscodeOperationQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        StartsWithCondition(
-          property: 4,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'failureMessage',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
@@ -859,63 +512,455 @@ extension TranscodeOperationQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        EndsWithCondition(
-          property: 4,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'failureMessage',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
       failureMessageContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        ContainsCondition(
-          property: 4,
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'failureMessage',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
       failureMessageMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        MatchesCondition(
-          property: 4,
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'failureMessage',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
       failureMessageIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const EqualCondition(
-          property: 4,
-          value: '',
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'failureMessage',
+        value: '',
+      ));
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
       failureMessageIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const GreaterCondition(
-          property: 4,
-          value: '',
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'failureMessage',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      isarIdEqualTo(Id value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'isarId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      isarIdGreaterThan(
+    Id value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'isarId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      isarIdLessThan(
+    Id value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'isarId',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      isarIdBetween(
+    Id lower,
+    Id upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      songIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'songId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      songIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'songId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      songIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'songId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      songIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'songId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      songIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'songId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      songIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'songId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      songIdContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'songId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      songIdMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'songId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      songIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'songId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      songIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'songId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      timestampEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'timestamp',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      timestampGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'timestamp',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      timestampLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'timestamp',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      timestampBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'timestamp',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      workReceivedTokenIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'workReceivedToken',
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      workReceivedTokenIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'workReceivedToken',
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      workReceivedTokenEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'workReceivedToken',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      workReceivedTokenGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'workReceivedToken',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      workReceivedTokenLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'workReceivedToken',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      workReceivedTokenBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'workReceivedToken',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      workReceivedTokenStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'workReceivedToken',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      workReceivedTokenEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'workReceivedToken',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      workReceivedTokenContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'workReceivedToken',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      workReceivedTokenMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'workReceivedToken',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      workReceivedTokenIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'workReceivedToken',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      workReceivedTokenIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'workReceivedToken',
+        value: '',
+      ));
     });
   }
 }
@@ -923,255 +968,246 @@ extension TranscodeOperationQueryFilter
 extension TranscodeOperationQueryObject
     on QueryBuilder<TranscodeOperation, TranscodeOperation, QFilterCondition> {}
 
+extension TranscodeOperationQueryLinks
+    on QueryBuilder<TranscodeOperation, TranscodeOperation, QFilterCondition> {}
+
 extension TranscodeOperationQuerySortBy
     on QueryBuilder<TranscodeOperation, TranscodeOperation, QSortBy> {
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy> sortById(
-      {bool caseSensitive = true}) {
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
+      sortByFailed() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(
-        1,
-        caseSensitive: caseSensitive,
-      );
+      return query.addSortBy(r'failed', Sort.asc);
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
-      sortByIdDesc({bool caseSensitive = true}) {
+      sortByFailedDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(
-        1,
-        sort: Sort.desc,
-        caseSensitive: caseSensitive,
-      );
+      return query.addSortBy(r'failed', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
+      sortByFailureMessage() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'failureMessage', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
+      sortByFailureMessageDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'failureMessage', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
+      sortBySongId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'songId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
+      sortBySongIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'songId', Sort.desc);
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
       sortByTimestamp() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(2);
+      return query.addSortBy(r'timestamp', Sort.asc);
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
       sortByTimestampDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(2, sort: Sort.desc);
+      return query.addSortBy(r'timestamp', Sort.desc);
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
-      sortByWorkReceivedToken({bool caseSensitive = true}) {
+      sortByWorkReceivedToken() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(
-        3,
-        caseSensitive: caseSensitive,
-      );
+      return query.addSortBy(r'workReceivedToken', Sort.asc);
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
-      sortByWorkReceivedTokenDesc({bool caseSensitive = true}) {
+      sortByWorkReceivedTokenDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(
-        3,
-        sort: Sort.desc,
-        caseSensitive: caseSensitive,
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
-      sortByFailureMessage({bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(
-        4,
-        caseSensitive: caseSensitive,
-      );
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
-      sortByFailureMessageDesc({bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(
-        4,
-        sort: Sort.desc,
-        caseSensitive: caseSensitive,
-      );
+      return query.addSortBy(r'workReceivedToken', Sort.desc);
     });
   }
 }
 
 extension TranscodeOperationQuerySortThenBy
     on QueryBuilder<TranscodeOperation, TranscodeOperation, QSortThenBy> {
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy> thenById(
-      {bool caseSensitive = true}) {
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
+      thenByFailed() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(1, caseSensitive: caseSensitive);
+      return query.addSortBy(r'failed', Sort.asc);
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
-      thenByIdDesc({bool caseSensitive = true}) {
+      thenByFailedDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(1, sort: Sort.desc, caseSensitive: caseSensitive);
+      return query.addSortBy(r'failed', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
+      thenByFailureMessage() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'failureMessage', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
+      thenByFailureMessageDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'failureMessage', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
+      thenByIsarId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isarId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
+      thenByIsarIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'isarId', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
+      thenBySongId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'songId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
+      thenBySongIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'songId', Sort.desc);
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
       thenByTimestamp() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(2);
+      return query.addSortBy(r'timestamp', Sort.asc);
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
       thenByTimestampDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(2, sort: Sort.desc);
+      return query.addSortBy(r'timestamp', Sort.desc);
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
-      thenByWorkReceivedToken({bool caseSensitive = true}) {
+      thenByWorkReceivedToken() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(3, caseSensitive: caseSensitive);
+      return query.addSortBy(r'workReceivedToken', Sort.asc);
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
-      thenByWorkReceivedTokenDesc({bool caseSensitive = true}) {
+      thenByWorkReceivedTokenDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(3, sort: Sort.desc, caseSensitive: caseSensitive);
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
-      thenByFailureMessage({bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(4, caseSensitive: caseSensitive);
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
-      thenByFailureMessageDesc({bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(4, sort: Sort.desc, caseSensitive: caseSensitive);
+      return query.addSortBy(r'workReceivedToken', Sort.desc);
     });
   }
 }
 
 extension TranscodeOperationQueryWhereDistinct
     on QueryBuilder<TranscodeOperation, TranscodeOperation, QDistinct> {
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterDistinct>
-      distinctByTimestamp() {
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QDistinct>
+      distinctByFailed() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(2);
+      return query.addDistinctBy(r'failed');
     });
   }
 
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterDistinct>
-      distinctByWorkReceivedToken({bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(3, caseSensitive: caseSensitive);
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterDistinct>
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QDistinct>
       distinctByFailureMessage({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(4, caseSensitive: caseSensitive);
+      return query.addDistinctBy(r'failureMessage',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QDistinct>
+      distinctBySongId({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'songId', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QDistinct>
+      distinctByTimestamp() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'timestamp');
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QDistinct>
+      distinctByWorkReceivedToken({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'workReceivedToken',
+          caseSensitive: caseSensitive);
     });
   }
 }
 
-extension TranscodeOperationQueryProperty1
-    on QueryBuilder<TranscodeOperation, TranscodeOperation, QProperty> {
-  QueryBuilder<TranscodeOperation, String, QAfterProperty> idProperty() {
+extension TranscodeOperationQueryProperty
+    on QueryBuilder<TranscodeOperation, TranscodeOperation, QQueryProperty> {
+  QueryBuilder<TranscodeOperation, int, QQueryOperations> isarIdProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addProperty(1);
+      return query.addPropertyName(r'isarId');
     });
   }
 
-  QueryBuilder<TranscodeOperation, DateTime, QAfterProperty>
-      timestampProperty() {
+  QueryBuilder<TranscodeOperation, bool, QQueryOperations> failedProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addProperty(2);
+      return query.addPropertyName(r'failed');
     });
   }
 
-  QueryBuilder<TranscodeOperation, String?, QAfterProperty>
-      workReceivedTokenProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addProperty(3);
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, String?, QAfterProperty>
+  QueryBuilder<TranscodeOperation, String?, QQueryOperations>
       failureMessageProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addProperty(4);
+      return query.addPropertyName(r'failureMessage');
     });
   }
-}
 
-extension TranscodeOperationQueryProperty2<R>
-    on QueryBuilder<TranscodeOperation, R, QAfterProperty> {
-  QueryBuilder<TranscodeOperation, (R, String), QAfterProperty> idProperty() {
+  QueryBuilder<TranscodeOperation, String, QQueryOperations> songIdProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addProperty(1);
+      return query.addPropertyName(r'songId');
     });
   }
 
-  QueryBuilder<TranscodeOperation, (R, DateTime), QAfterProperty>
-      timestampProperty() {
+  QueryBuilder<TranscodeOperation, int, QQueryOperations> timestampProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addProperty(2);
+      return query.addPropertyName(r'timestamp');
     });
   }
 
-  QueryBuilder<TranscodeOperation, (R, String?), QAfterProperty>
+  QueryBuilder<TranscodeOperation, String?, QQueryOperations>
       workReceivedTokenProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addProperty(3);
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, (R, String?), QAfterProperty>
-      failureMessageProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addProperty(4);
-    });
-  }
-}
-
-extension TranscodeOperationQueryProperty3<R1, R2>
-    on QueryBuilder<TranscodeOperation, (R1, R2), QAfterProperty> {
-  QueryBuilder<TranscodeOperation, (R1, R2, String), QOperations> idProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addProperty(1);
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, (R1, R2, DateTime), QOperations>
-      timestampProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addProperty(2);
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, (R1, R2, String?), QOperations>
-      workReceivedTokenProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addProperty(3);
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, (R1, R2, String?), QOperations>
-      failureMessageProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addProperty(4);
+      return query.addPropertyName(r'workReceivedToken');
     });
   }
 }
