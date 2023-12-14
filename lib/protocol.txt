@@ -37,3 +37,10 @@ byte[] /song/getData (
     "format": int ?= 1 [0: opus, 1: aac],
     "quality": int ?= 2 [0: low, 1: medium, 2: high],
 )
+
+Song[] /song/search (
+    "token": IdentityToken,
+    "query": String (length <= 32),
+    "start": int?,
+    "limit": int? (<= 10),
+)

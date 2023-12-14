@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:isar/isar.dart';
 import 'package:music_server/audio_processing.dart';
 import 'package:music_server/database/song.dart';
 import 'package:music_server/database/transcode_operation.dart';
@@ -160,4 +161,34 @@ FutureOr<Response> songGetDataHandler(Request request, MusicServerThreadData thr
   if (!songFile.existsSync()) return Response.notFound('');
 
   return Response.ok(songFile.openRead(start, end), headers: {'content-type': 'audio/${preset.format.fileType}'});
+}
+
+FutureOr<Response> songSearchHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) {
+  final queryString = request.headers['query'];
+  if (queryString == null || queryString.isEmpty || queryString.length > 32) return Response.badRequest();
+
+  int start;
+  final startString = request.headers['start'];
+  if (startString != null) {
+    final startInt = int.tryParse(startString);
+    if (startInt == null || startInt < 0) return Response.badRequest();
+    start = startInt;
+  } else {
+    start = 0;
+  }
+
+  int limit;
+  final limitString = request.headers['limit'];
+  if (limitString != null) {
+    final limitInt = int.tryParse(limitString);
+    if (limitInt == null || limitInt < 0 || limitInt > 10) return Response.badRequest();
+    limit = limitInt;
+  } else {
+    limit = 10;
+  }
+
+  final queryPhonetics = getPhoneticCodesOfQuery(queryString);
+  final searchResults = threadData.isar.songs.where().anyOf(queryPhonetics, (q, element) => q.namePhoneticsElementEqualTo(element)).offset(start).limit(limit).findAllSync();
+
+  return Response.ok(jsonEncode(searchResults.map((song) => song.toJson()).toList()));
 }

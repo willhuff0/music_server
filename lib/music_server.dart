@@ -136,6 +136,7 @@ final musicServerCustomHandlers = [
   CustomHandlerAuthRequired(path: '/song/create', handle: songCreateHandler),
   CustomHandlerAuthRequired(path: '/song/uploadData', handle: songUploadDataHandler),
   CustomHandlerAuthRequired(path: '/song/getData', handle: songGetDataHandler),
+  CustomHandlerAuthRequired(path: '/song/search', handle: songSearchHandler),
 ];
 
 Response statusHandler(Request request, MusicServerThreadData threadData) {
