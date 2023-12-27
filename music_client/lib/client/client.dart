@@ -8,7 +8,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:music_client/client/auth.dart';
 import 'package:music_shared/music_shared.dart';
 
-const serverHost = '192.168.7.178';
+const serverHost = '127.0.0.1'; //'192.168.7.178';
 const serverPort = 8081;
 final serverUri = Uri(host: serverHost, port: serverPort, scheme: 'http'); // TODO: enforce https
 

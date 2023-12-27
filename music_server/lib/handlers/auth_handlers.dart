@@ -91,5 +91,5 @@ FutureOr<Response> getNameHandler(Request request, MusicServerThreadData threadD
   final dbUser = threadData.isar.users.getByIdSync(identityToken.userId!);
   if (dbUser == null) return Response.forbidden('');
 
-  return Response.ok('Your are logged in as ${dbUser.name}');
+  return Response.ok('You are logged in as ${dbUser.name}');
 }

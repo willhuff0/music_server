@@ -213,13 +213,16 @@ class _LandingPageState extends State<LandingPage> {
             children: [
               Align(
                 alignment: Alignment.bottomLeft,
-                child: Text(
-                  'Music\nClient',
-                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        fontSize: 96.0,
-                        fontWeight: FontWeight.w800,
-                        color: Theme.of(context).colorScheme.inverseSurface,
-                      ),
+                child: FittedBox(
+                  fit: BoxFit.fitWidth,
+                  child: Text(
+                    'Music\nClient',
+                    style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                          fontSize: 96.0,
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.inverseSurface,
+                        ),
+                  ),
                 ),
               ),
               const SizedBox(height: 18.0),
@@ -379,13 +382,16 @@ class _ConfirmPasswordPageState extends State<ConfirmPasswordPage> {
                 children: [
                   Align(
                     alignment: Alignment.bottomLeft,
-                    child: Text(
-                      'Reenter\nPassword',
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                            fontSize: 64.0,
-                            fontWeight: FontWeight.w800,
-                            color: Theme.of(context).colorScheme.inverseSurface,
-                          ),
+                    child: FittedBox(
+                      fit: BoxFit.fitWidth,
+                      child: Text(
+                        'Reenter\nPassword',
+                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                              fontSize: 64.0,
+                              fontWeight: FontWeight.w800,
+                              color: Theme.of(context).colorScheme.inverseSurface,
+                            ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 18.0),
@@ -542,13 +548,16 @@ class _EnterNameAndCreateUserPageState extends State<EnterNameAndCreateUserPage>
                 children: [
                   Align(
                     alignment: Alignment.bottomLeft,
-                    child: Text(
-                      'Who\'re\nYou?',
-                      style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                            fontSize: 84.0,
-                            fontWeight: FontWeight.w800,
-                            color: Theme.of(context).colorScheme.inverseSurface,
-                          ),
+                    child: FittedBox(
+                      fit: BoxFit.fitWidth,
+                      child: Text(
+                        'Who\'re\nYou?',
+                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                              fontSize: 84.0,
+                              fontWeight: FontWeight.w800,
+                              color: Theme.of(context).colorScheme.inverseSurface,
+                            ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 18.0),

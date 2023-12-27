@@ -9,11 +9,13 @@ import 'package:music_shared/music_shared.dart';
 
 const secureStorage = FlutterSecureStorage(aOptions: AndroidOptions(encryptedSharedPreferences: true));
 
+Future<void>? _currentTokenWriteOperation;
+
 String? _identityToken;
 String? get identityToken => _identityToken;
 set identityToken(String? value) {
   _identityToken = value;
-  secureStorage.write(key: 'token', value: value);
+  _currentTokenWriteOperation = _currentTokenWriteOperation?.then((_) => secureStorage.write(key: 'token', value: value)) ?? secureStorage.write(key: 'token', value: value);
   _authStateChangedController.add(value);
 }
 
