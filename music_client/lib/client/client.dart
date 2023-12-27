@@ -27,18 +27,15 @@ void runSpeedTestOnConnectivityChanged() {
 }
 
 Future<void> _runSpeedTest() async {
-  const iterations = 4;
+  const int sizeMB = 10;
 
-  final uri = serverUri.replace(path: '/speedTest/.5');
+  final uri = serverUri.replace(path: '/speedTest/$sizeMB');
 
   final stopwatch = Stopwatch()..start();
-  for (var i = 0; i < iterations; i++) {
-    await http.get(uri);
-  }
+  await http.get(uri); // TODO: change to not include TCP overhead time
   stopwatch.stop();
 
-  double averageDurationSeconds = stopwatch.elapsedMilliseconds / 1000 / iterations;
-  double speedMBps = .5 / averageDurationSeconds;
+  final speedMBps = sizeMB / (stopwatch.elapsedMicroseconds / 1000000);
 
   deviceSpeed = switch (speedMBps) {
     > 12.0 => DeviceSpeed.veryFast,

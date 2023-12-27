@@ -28,8 +28,8 @@ String "songId" /song/create (
     "token": IdentityToken,
     "songId": String,
     "start": int,
-    "content-length": int (< 100000000 (100 MB)),
-) byte[] (length < 100000000 (100 MB))
+    "content-length": int (< 100000000 B (100 MB)),
+) byte[] (length < 100000000 B (100 MB))
 
 byte[] /song/getData (
     "token": IdentityToken,
@@ -47,4 +47,4 @@ Song[] /song/search (
     "limit": int? (<= 10),
 )
 
-byte[] /speedTest/{size [.5, 1] (MB)} { }
+byte[] /speedTest/{size [.5, 1, (int > 1)...] (MB)} ()

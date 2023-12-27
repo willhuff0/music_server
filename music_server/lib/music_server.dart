@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:isar/isar.dart';
 import 'package:music_server/database/song.dart';
@@ -145,8 +146,8 @@ Response statusHandler(Request request, MusicServerThreadData threadData) {
   return Response.ok('Operational');
 }
 
-final speedTestDataHalf = List.generate(62500, (index) => index.isEven ? 1 : 0); // .5 MB
-final speedTestDataFull = List.generate(62500 * 2, (index) => index.isEven ? 1 : 0); // 1 MB
+final speedTestDataHalf = Uint8List.fromList(List.generate(500 * 1000, (index) => index.isEven ? 1 : 0)); // .5 MB
+final speedTestDataFull = Uint8List.fromList(List.generate(1000 * 1000, (index) => index.isEven ? 1 : 0)); // 1 MB
 Response speedTestHandler(Request request, MusicServerThreadData threadData) {
   switch (request.params['size']) {
     case '.5':
@@ -155,7 +156,13 @@ Response speedTestHandler(Request request, MusicServerThreadData threadData) {
     case '1':
     case '1.0':
       return Response.ok(speedTestDataFull);
-    case _:
-      return Response.badRequest();
+    case var sizeString:
+      if (sizeString == null) return Response.badRequest();
+      final size = double.tryParse(sizeString)?.floor();
+      if (size == null || size < 1) return Response.badRequest();
+      return Response.ok(
+        Stream.fromIterable(Iterable.generate(size, (index) => speedTestDataFull)),
+        headers: {'Content-Length': (speedTestDataFull.lengthInBytes * size).toString()},
+      );
   }
 }
