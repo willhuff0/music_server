@@ -4,7 +4,7 @@
 
 .DS_Store
 
-server_root/database/
-server_root/storage/
+music_server/server_root/database/
+music_server/server_root/storage/
 
-music_server.exe
+music_server/music_server.exe
