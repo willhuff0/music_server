@@ -100,6 +100,32 @@ Future<int> startSession({String? uid, String? email, required String password})
   return 200;
 }
 
+Future<bool> autoSessionRefresh() async {
+  if (!await resumeSavedSession()) {
+    if (!await startSessionWithSavedCredentials()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/// Attempts to restore the last session with the token stored in secure storage.
+///
+/// Returns true if the stored token exists and has not expired. This function does not make an api call and may return true even if the token has been invalidated on the server.
+Future<bool> resumeSavedSession() async {
+  final identityTokenString = await secureStorage.read(key: 'token');
+  if (identityTokenString == null) return false;
+
+  final identityTokenObject = IdentityToken.decode(identityTokenString);
+  if (identityTokenObject == null) return false;
+
+  identityToken = identityTokenString;
+  return true;
+}
+
+/// Attempts to start a session using the uid and password stored in secure storage.
+///
+/// Returns true if both the uid and password exist and a call to startSession is successful.
 Future<bool> startSessionWithSavedCredentials() async {
   final uidString = await secureStorage.read(key: 'uid');
   if (uidString == null || uidString.isEmpty) return false;
@@ -110,18 +136,18 @@ Future<bool> startSessionWithSavedCredentials() async {
   return await startSession(uid: uidString, password: passwordString) == 200;
 }
 
+/// Ends the current session by setting identityToken to null, and deletes all credentials from secure storage.
 void signOut() {
   identityToken = null;
   secureStorage.delete(key: 'uid');
   secureStorage.delete(key: 'password');
 }
 
-/// Auth required
+/// apiCallWithAuth: Gets the currently user's display name. This function is mostly used for testing.
+///
+/// Returns null if authentication fails
 Future<String?> getName() async {
-  if (identityToken == null) return null;
-  final response = await apiCallAuthRequired('/auth/getName', headers: {
-    'token': identityToken!,
-  });
+  final response = await apiCallWithAuth('/auth/getName');
   if (response.statusCode == 200) {
     return response.bodyString;
   } else {

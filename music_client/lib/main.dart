@@ -74,39 +74,8 @@ class _PreloadPageState extends State<PreloadPage> {
   }
 
   Future<void> preload() async {
-    await autoSessionRefresh();
+    if (await auth.autoSessionRefresh()) authenticated = true;
     runSpeedTestOnConnectivityChanged();
-  }
-
-  Future<void> autoSessionRefresh() async {
-    if (!await resumeSavedSession()) {
-      if (!await startSessionWithSavedCredentials()) {
-        authenticated = false;
-        return;
-      }
-    }
-    authenticated = true;
-  }
-
-  Future<bool> resumeSavedSession() async {
-    final identityTokenString = await auth.secureStorage.read(key: 'token');
-    if (identityTokenString == null) return false;
-
-    final identityTokenObject = auth.IdentityToken.decode(identityTokenString);
-    if (identityTokenObject == null) return false;
-
-    auth.identityToken = identityTokenString;
-    return true;
-  }
-
-  Future<bool> startSessionWithSavedCredentials() async {
-    final uidString = await auth.secureStorage.read(key: 'uid');
-    if (uidString == null || uidString.isEmpty) return false;
-
-    final passwordString = await auth.secureStorage.read(key: 'password');
-    if (passwordString == null || passwordString.isEmpty) return false;
-
-    return await auth.startSession(uid: uidString, password: passwordString) == 200;
   }
 
   @override
@@ -541,7 +510,7 @@ class _EnterNameAndCreateUserPageState extends State<EnterNameAndCreateUserPage>
           Padding(
             padding: const EdgeInsets.all(24.0),
             child: Align(
-              alignment: Alignment(0.0, 1.0),
+              alignment: const Alignment(0.0, 1.0),
               child: ListView(
                 physics: const NeverScrollableScrollPhysics(),
                 shrinkWrap: true,

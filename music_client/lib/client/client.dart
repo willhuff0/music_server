@@ -8,7 +8,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:music_client/client/auth.dart';
 import 'package:music_shared/music_shared.dart';
 
-const serverHost = '127.0.0.1'; //'192.168.7.178';
+const serverHost = '127.0.0.1';
 const serverPort = 8081;
 final serverUri = Uri(host: serverHost, port: serverPort, scheme: 'http'); // TODO: enforce https
 
@@ -87,20 +87,37 @@ class ApiResponse {
   String get bodyString => utf8.decode(body);
 }
 
+/// Calls an api on the server.
 Future<ApiResponse> apiCall(String route, {Map<String, String> headers = const {}, Uint8List? body}) async {
   final response = await http.put(serverUri.resolve(route), headers: headers, body: body);
   return ApiResponse(statusCode: response.statusCode, headers: response.headers, body: response.bodyBytes);
 }
 
-Future<ApiResponse> apiCallAuthRequired(String route, {Map<String, String> headers = const {}, Uint8List? body}) => _apiCallAuthRequired(route, headers: headers, body: body);
+/// Calls an api on the server and automatically includes the authentication headers.
+///
+/// Returns an empty ApiResponse with status code 403 if identityToken is null and autoSessionRefresh fails.
+///
+/// If the server responds with status code 403, this function will call startSessionWithSavedCredentials and retry the api call if a session was started.
+Future<ApiResponse> apiCallWithAuth(String route, {Map<String, String> headers = const {}, Uint8List? body}) => _apiCallWithAuth(route, headers: headers, body: body);
 
-Future<ApiResponse> _apiCallAuthRequired(String route, {Map<String, String> headers = const {}, Uint8List? body, int retryCountInternal = 0}) async {
-  final response = await http.put(serverUri.resolve(route), headers: headers, body: body);
+Future<ApiResponse> _apiCallWithAuth(String route, {Map<String, String> headers = const {}, Uint8List? body, int retryCountInternal = 0}) async {
+  if (identityToken == null) {
+    if (!await autoSessionRefresh()) {
+      signOut();
+      return ApiResponse(statusCode: 403, headers: {}, body: Uint8List(0));
+    }
+  }
+  final headersWithAuth = {
+    ...headers,
+    'token': identityToken!,
+  };
+
+  final response = await http.put(serverUri.resolve(route), headers: headersWithAuth, body: body);
   final apiResponse = ApiResponse(statusCode: response.statusCode, headers: response.headers, body: response.bodyBytes);
   switch (response.statusCode) {
     case 403:
       if (retryCountInternal < 1 && await startSessionWithSavedCredentials()) {
-        return _apiCallAuthRequired(route, headers: headers, body: body, retryCountInternal: retryCountInternal + 1);
+        return _apiCallWithAuth(route, headers: headersWithAuth, body: body, retryCountInternal: retryCountInternal + 1);
       } else {
         signOut();
         return apiResponse;
