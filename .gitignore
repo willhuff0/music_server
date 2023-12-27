@@ -2,5 +2,9 @@
 # Created by `dart pub`
 .dart_tool/
 
+.DS_Store
+
 server_root/database/
 server_root/storage/
+
+music_server.exe

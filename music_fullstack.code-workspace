@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "music_client"
+		},
+		{
+			"path": "music_server"
+		},
+		{
+			"path": "music_shared"
+		}
+	]
+}
