@@ -145,7 +145,7 @@ void signOut() {
 
 /// apiCallWithAuth: Gets the currently user's display name. This function is mostly used for testing.
 ///
-/// Returns null if authentication fails
+/// Returns null if authentication fails.
 Future<String?> getName() async {
   final response = await apiCallWithAuth('/auth/getName');
   if (response.statusCode == 200) {

@@ -86,10 +86,10 @@ FutureOr<Response> startSessionHandler(Request request, MusicServerThreadData th
 }
 
 FutureOr<Response> getNameHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) async {
-  if (identityToken.userId == null) return Response.ok('You are logged in anonymously.');
+  if (identityToken.userId == null) return Response.ok('Anonymous');
 
   final dbUser = threadData.isar.users.getByIdSync(identityToken.userId!);
   if (dbUser == null) return Response.forbidden('');
 
-  return Response.ok('You are logged in as ${dbUser.name}');
+  return Response.ok(dbUser.name);
 }

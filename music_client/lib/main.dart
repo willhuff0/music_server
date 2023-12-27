@@ -615,7 +615,7 @@ class _HomePageState extends State<HomePage> {
             : Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(name!),
+                  Text('You are logged in as $name'),
                   const SizedBox(height: 14.0),
                   FilledButton.tonal(
                     onPressed: () {
