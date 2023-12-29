@@ -9,9 +9,11 @@ import 'package:music_server/database/unprocessed_song.dart';
 import 'package:music_server/music_server.dart';
 import 'package:music_server/stateless_server/stateless_server.dart';
 import 'package:music_shared/music_shared.dart';
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
 const maxUploadChunkBytes = 100 * 1000 * 1000;
+const maxImageUploadBytes = 100 * 1000 * 1000;
 
 final _uuid = Uuid();
 
@@ -86,31 +88,82 @@ FutureOr<Response> songUploadDataHandler(Request request, MusicServerThreadData 
 
   if (unprocessedSong.owner != identityToken.userId) return Response.forbidden('');
 
-  final inputPath = getUnprocessedSongInputFilePath(threadData.paths, unprocessedSong.id, unprocessedSong.fileExtension);
+  final inputPath = getUnprocessedSongAudioInputFilePath(threadData.paths, unprocessedSong.id, unprocessedSong.fileExtension);
 
-  final data = <int>[];
+  final inputFile = File(inputPath);
+  if (!inputFile.existsSync()) inputFile.createSync(recursive: true);
+  final randomAccessFile = inputFile.openSync(mode: FileMode.writeOnlyAppend);
+
+  randomAccessFile.setPositionSync(start);
+
   var length = 0;
   await for (final part in request.read()) {
     length += part.length;
     if (length > maxUploadChunkBytes) return Response.badRequest();
 
-    data.addAll(part);
+    randomAccessFile.writeFromSync(part);
   }
 
-  final inputFile = File(inputPath);
-  if (!inputFile.existsSync()) inputFile.createSync(recursive: true);
-  final randomAccessFile = inputFile.openSync(mode: FileMode.writeOnlyAppend);
-  randomAccessFile.setPositionSync(start);
-  randomAccessFile.writeFromSync(data);
   randomAccessFile.flushSync();
   randomAccessFile.closeSync();
 
   unprocessedSong.numPartsReceived++;
-  if (unprocessedSong.numPartsReceived >= unprocessedSong.numParts) {
-    threadData.isar.writeTxnSync(() => threadData.isar.transcodeOperations.putSync(TranscodeOperation(songId: songId, timestamp: DateTime.timestamp().millisecondsSinceEpoch)));
-  } else {
-    threadData.isar.writeTxnSync(() => threadData.isar.unprocessedSongs.putByIdSync(unprocessedSong));
+  threadData.isar.writeTxnSync(() => threadData.isar.unprocessedSongs.putByIdSync(unprocessedSong));
+
+  return Response.ok('');
+}
+
+FutureOr<Response> songUploadImageHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) async {
+  final contentLength = request.contentLength;
+  if (contentLength == null || contentLength > maxImageUploadBytes) return Response.badRequest();
+
+  final songId = request.headers['songId'];
+  if (songId == null) return Response.badRequest();
+
+  final fileExtension = request.headers['fileExtension'];
+  if (fileExtension == null) return Response.badRequest();
+
+  final unprocessedSong = threadData.isar.unprocessedSongs.getByIdSync(songId);
+  if (unprocessedSong == null) return Response.notFound('');
+
+  if (unprocessedSong.owner != identityToken.userId) return Response.forbidden('');
+
+  final inputPath = getUnprocessedSongImageInputFilePath(threadData.paths, unprocessedSong.id, fileExtension);
+
+  final inputFile = File(inputPath);
+  if (!inputFile.existsSync()) inputFile.createSync(recursive: true);
+  final randomAccessFile = inputFile.openSync(mode: FileMode.writeOnly);
+
+  var length = 0;
+  await for (final part in request.read()) {
+    length += part.length;
+    if (length > maxImageUploadBytes) return Response.badRequest();
+
+    randomAccessFile.writeFromSync(part);
   }
+
+  randomAccessFile.flushSync();
+  randomAccessFile.closeSync();
+
+  unprocessedSong.imageFileExtension = fileExtension;
+  threadData.isar.writeTxnSync(() => threadData.isar.unprocessedSongs.putByIdSync(unprocessedSong));
+
+  return Response.ok('');
+}
+
+FutureOr<Response> songUploadDoneHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) {
+  final songId = request.headers['songId'];
+  if (songId == null) return Response.badRequest();
+
+  final unprocessedSong = threadData.isar.unprocessedSongs.getByIdSync(songId);
+  if (unprocessedSong == null) return Response.notFound('');
+
+  if (unprocessedSong.owner != identityToken.userId) return Response.forbidden('');
+
+  if (unprocessedSong.numPartsReceived < unprocessedSong.numParts) return Response.notModified();
+  if (unprocessedSong.imageFileExtension == null) return Response.notModified();
+
+  threadData.isar.writeTxnSync(() => threadData.isar.transcodeOperations.putBySongIdSync(TranscodeOperation(songId: songId, timestamp: DateTime.timestamp().millisecondsSinceEpoch)));
 
   return Response.ok('');
 }
@@ -157,10 +210,30 @@ FutureOr<Response> songGetDataHandler(Request request, MusicServerThreadData thr
 
   final preset = AudioPreset(format: format, quality: quality);
 
-  final songFile = File(getSongFilePath(threadData.paths, songId, preset));
-  if (!songFile.existsSync()) return Response.notFound('');
+  final audioFile = File(getSongAudioFilePath(threadData.paths, songId, preset));
+  if (!audioFile.existsSync()) return Response.notFound('');
 
-  return Response.ok(songFile.openRead(start, end), headers: {'content-type': 'audio/${preset.format.fileType}'});
+  return Response.ok(audioFile.openRead(start, end), headers: {'content-type': 'audio/${preset.format.fileType}'});
+}
+
+FutureOr<Response> songGetImageHandler(Request request, MusicServerThreadData threadData) {
+  final songId = request.params['songId'];
+  if (songId == null) return Response.badRequest();
+
+  ImageSize size;
+  final sizeString = request.params['size'];
+  if (sizeString == null) {
+    size = ImageSize.thumb;
+  } else {
+    final sizeInt = int.tryParse(p.basenameWithoutExtension(sizeString));
+    if (sizeInt == null || sizeInt < 0 || sizeInt >= ImageSize.values.length) return Response.badRequest();
+    size = ImageSize.values[sizeInt];
+  }
+
+  final imageFile = File(getSongImageFilePath(threadData.paths, songId, size));
+  if (!imageFile.existsSync()) return Response.notFound('');
+
+  return Response.ok(imageFile.openRead(), headers: {'content-type': 'image/webp'});
 }
 
 FutureOr<Response> songSearchHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) {

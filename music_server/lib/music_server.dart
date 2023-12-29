@@ -81,6 +81,8 @@ class MusicServerPaths {
   late final String ffmpegPath;
   late final String ffprobePath;
 
+  late final String magickPath;
+
   MusicServerPaths.fromCurrentOS() {
     String root;
     if (forceDebug || !const bool.fromEnvironment("dart.vm.product")) {
@@ -97,6 +99,8 @@ class MusicServerPaths {
 
     ffmpegPath = p.join(rootPath, 'tools', Platform.isWindows ? 'ffmpeg.exe' : 'ffmpeg');
     ffprobePath = p.join(rootPath, 'tools', Platform.isWindows ? 'ffprobe.exe' : 'ffprobe');
+
+    magickPath = p.join(rootPath, 'tools', Platform.isWindows ? 'magick.exe' : 'magick');
 
     Directory(databasePath).createSync(recursive: true);
     Directory(storagePath).createSync(recursive: true);
@@ -138,7 +142,10 @@ final musicServerCustomHandlers = [
   // Song
   CustomHandlerAuthRequired(path: '/song/create', handle: songCreateHandler),
   CustomHandlerAuthRequired(path: '/song/uploadData', handle: songUploadDataHandler),
+  CustomHandlerAuthRequired(path: '/song/uploadImage', handle: songUploadImageHandler),
+  CustomHandlerAuthRequired(path: '/song/uploadDone', handle: songUploadDoneHandler),
   CustomHandlerAuthRequired(path: '/song/getData', handle: songGetDataHandler),
+  CustomHandler(path: '/song/getImage/<songId>/<size>', handle: songGetImageHandler),
   CustomHandlerAuthRequired(path: '/song/search', handle: songSearchHandler),
 ];
 

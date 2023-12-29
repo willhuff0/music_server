@@ -6,6 +6,7 @@ part 'transcode_operation.g.dart';
 class TranscodeOperation {
   Id isarId;
 
+  @Index(unique: true)
   final String songId;
 
   final int timestamp;
@@ -14,7 +15,7 @@ class TranscodeOperation {
 
   @Index(composite: [CompositeIndex('timestamp')])
   bool failed;
-  String? failureMessage;
+  List<String> failureMessages;
 
   TranscodeOperation({
     this.isarId = Isar.autoIncrement,
@@ -22,6 +23,6 @@ class TranscodeOperation {
     required this.timestamp,
     this.workReceivedToken,
     this.failed = false,
-    this.failureMessage,
+    this.failureMessages = const [],
   });
 }

@@ -23,10 +23,10 @@ const TranscodeOperationSchema = CollectionSchema(
       name: r'failed',
       type: IsarType.bool,
     ),
-    r'failureMessage': PropertySchema(
+    r'failureMessages': PropertySchema(
       id: 1,
-      name: r'failureMessage',
-      type: IsarType.string,
+      name: r'failureMessages',
+      type: IsarType.stringList,
     ),
     r'songId': PropertySchema(
       id: 2,
@@ -50,6 +50,19 @@ const TranscodeOperationSchema = CollectionSchema(
   deserializeProp: _transcodeOperationDeserializeProp,
   idName: r'isarId',
   indexes: {
+    r'songId': IndexSchema(
+      id: -4588889454650216128,
+      name: r'songId',
+      unique: true,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'songId',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    ),
     r'failed_timestamp': IndexSchema(
       id: -5132437931030169147,
       name: r'failed_timestamp',
@@ -83,10 +96,11 @@ int _transcodeOperationEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  bytesCount += 3 + object.failureMessages.length * 3;
   {
-    final value = object.failureMessage;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
+    for (var i = 0; i < object.failureMessages.length; i++) {
+      final value = object.failureMessages[i];
+      bytesCount += value.length * 3;
     }
   }
   bytesCount += 3 + object.songId.length * 3;
@@ -106,7 +120,7 @@ void _transcodeOperationSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeBool(offsets[0], object.failed);
-  writer.writeString(offsets[1], object.failureMessage);
+  writer.writeStringList(offsets[1], object.failureMessages);
   writer.writeString(offsets[2], object.songId);
   writer.writeLong(offsets[3], object.timestamp);
   writer.writeString(offsets[4], object.workReceivedToken);
@@ -120,7 +134,7 @@ TranscodeOperation _transcodeOperationDeserialize(
 ) {
   final object = TranscodeOperation(
     failed: reader.readBoolOrNull(offsets[0]) ?? false,
-    failureMessage: reader.readStringOrNull(offsets[1]),
+    failureMessages: reader.readStringList(offsets[1]) ?? const [],
     isarId: id,
     songId: reader.readString(offsets[2]),
     timestamp: reader.readLong(offsets[3]),
@@ -139,7 +153,7 @@ P _transcodeOperationDeserializeProp<P>(
     case 0:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 1:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readStringList(offset) ?? const []) as P;
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
@@ -163,6 +177,61 @@ List<IsarLinkBase<dynamic>> _transcodeOperationGetLinks(
 void _transcodeOperationAttach(
     IsarCollection<dynamic> col, Id id, TranscodeOperation object) {
   object.isarId = id;
+}
+
+extension TranscodeOperationByIndex on IsarCollection<TranscodeOperation> {
+  Future<TranscodeOperation?> getBySongId(String songId) {
+    return getByIndex(r'songId', [songId]);
+  }
+
+  TranscodeOperation? getBySongIdSync(String songId) {
+    return getByIndexSync(r'songId', [songId]);
+  }
+
+  Future<bool> deleteBySongId(String songId) {
+    return deleteByIndex(r'songId', [songId]);
+  }
+
+  bool deleteBySongIdSync(String songId) {
+    return deleteByIndexSync(r'songId', [songId]);
+  }
+
+  Future<List<TranscodeOperation?>> getAllBySongId(List<String> songIdValues) {
+    final values = songIdValues.map((e) => [e]).toList();
+    return getAllByIndex(r'songId', values);
+  }
+
+  List<TranscodeOperation?> getAllBySongIdSync(List<String> songIdValues) {
+    final values = songIdValues.map((e) => [e]).toList();
+    return getAllByIndexSync(r'songId', values);
+  }
+
+  Future<int> deleteAllBySongId(List<String> songIdValues) {
+    final values = songIdValues.map((e) => [e]).toList();
+    return deleteAllByIndex(r'songId', values);
+  }
+
+  int deleteAllBySongIdSync(List<String> songIdValues) {
+    final values = songIdValues.map((e) => [e]).toList();
+    return deleteAllByIndexSync(r'songId', values);
+  }
+
+  Future<Id> putBySongId(TranscodeOperation object) {
+    return putByIndex(r'songId', object);
+  }
+
+  Id putBySongIdSync(TranscodeOperation object, {bool saveLinks = true}) {
+    return putByIndexSync(r'songId', object, saveLinks: saveLinks);
+  }
+
+  Future<List<Id>> putAllBySongId(List<TranscodeOperation> objects) {
+    return putAllByIndex(r'songId', objects);
+  }
+
+  List<Id> putAllBySongIdSync(List<TranscodeOperation> objects,
+      {bool saveLinks = true}) {
+    return putAllByIndexSync(r'songId', objects, saveLinks: saveLinks);
+  }
 }
 
 extension TranscodeOperationQueryWhereSort
@@ -251,6 +320,51 @@ extension TranscodeOperationQueryWhere
         upper: upperIsarId,
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhereClause>
+      songIdEqualTo(String songId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'songId',
+        value: [songId],
+      ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterWhereClause>
+      songIdNotEqualTo(String songId) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'songId',
+              lower: [],
+              upper: [songId],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'songId',
+              lower: [songId],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'songId',
+              lower: [songId],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'songId',
+              lower: [],
+              upper: [songId],
+              includeUpper: false,
+            ));
+      }
     });
   }
 
@@ -409,31 +523,13 @@ extension TranscodeOperationQueryFilter
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      failureMessageIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'failureMessage',
-      ));
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      failureMessageIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'failureMessage',
-      ));
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      failureMessageEqualTo(
-    String? value, {
+      failureMessagesElementEqualTo(
+    String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'failureMessage',
+        property: r'failureMessages',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -441,15 +537,15 @@ extension TranscodeOperationQueryFilter
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      failureMessageGreaterThan(
-    String? value, {
+      failureMessagesElementGreaterThan(
+    String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
-        property: r'failureMessage',
+        property: r'failureMessages',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -457,15 +553,15 @@ extension TranscodeOperationQueryFilter
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      failureMessageLessThan(
-    String? value, {
+      failureMessagesElementLessThan(
+    String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
-        property: r'failureMessage',
+        property: r'failureMessages',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -473,16 +569,16 @@ extension TranscodeOperationQueryFilter
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      failureMessageBetween(
-    String? lower,
-    String? upper, {
+      failureMessagesElementBetween(
+    String lower,
+    String upper, {
     bool includeLower = true,
     bool includeUpper = true,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
-        property: r'failureMessage',
+        property: r'failureMessages',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -493,13 +589,13 @@ extension TranscodeOperationQueryFilter
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      failureMessageStartsWith(
+      failureMessagesElementStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'failureMessage',
+        property: r'failureMessages',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -507,13 +603,13 @@ extension TranscodeOperationQueryFilter
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      failureMessageEndsWith(
+      failureMessagesElementEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'failureMessage',
+        property: r'failureMessages',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -521,10 +617,11 @@ extension TranscodeOperationQueryFilter
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      failureMessageContains(String value, {bool caseSensitive = true}) {
+      failureMessagesElementContains(String value,
+          {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.contains(
-        property: r'failureMessage',
+        property: r'failureMessages',
         value: value,
         caseSensitive: caseSensitive,
       ));
@@ -532,10 +629,11 @@ extension TranscodeOperationQueryFilter
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      failureMessageMatches(String pattern, {bool caseSensitive = true}) {
+      failureMessagesElementMatches(String pattern,
+          {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.matches(
-        property: r'failureMessage',
+        property: r'failureMessages',
         wildcard: pattern,
         caseSensitive: caseSensitive,
       ));
@@ -543,22 +641,111 @@ extension TranscodeOperationQueryFilter
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      failureMessageIsEmpty() {
+      failureMessagesElementIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'failureMessage',
+        property: r'failureMessages',
         value: '',
       ));
     });
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
-      failureMessageIsNotEmpty() {
+      failureMessagesElementIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'failureMessage',
+        property: r'failureMessages',
         value: '',
       ));
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      failureMessagesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'failureMessages',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      failureMessagesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'failureMessages',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      failureMessagesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'failureMessages',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      failureMessagesLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'failureMessages',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      failureMessagesLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'failureMessages',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterFilterCondition>
+      failureMessagesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'failureMessages',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
     });
   }
 
@@ -988,20 +1175,6 @@ extension TranscodeOperationQuerySortBy
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
-      sortByFailureMessage() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'failureMessage', Sort.asc);
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
-      sortByFailureMessageDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'failureMessage', Sort.desc);
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
       sortBySongId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'songId', Sort.asc);
@@ -1057,20 +1230,6 @@ extension TranscodeOperationQuerySortThenBy
       thenByFailedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'failed', Sort.desc);
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
-      thenByFailureMessage() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'failureMessage', Sort.asc);
-    });
-  }
-
-  QueryBuilder<TranscodeOperation, TranscodeOperation, QAfterSortBy>
-      thenByFailureMessageDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'failureMessage', Sort.desc);
     });
   }
 
@@ -1141,10 +1300,9 @@ extension TranscodeOperationQueryWhereDistinct
   }
 
   QueryBuilder<TranscodeOperation, TranscodeOperation, QDistinct>
-      distinctByFailureMessage({bool caseSensitive = true}) {
+      distinctByFailureMessages() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'failureMessage',
-          caseSensitive: caseSensitive);
+      return query.addDistinctBy(r'failureMessages');
     });
   }
 
@@ -1185,10 +1343,10 @@ extension TranscodeOperationQueryProperty
     });
   }
 
-  QueryBuilder<TranscodeOperation, String?, QQueryOperations>
-      failureMessageProperty() {
+  QueryBuilder<TranscodeOperation, List<String>, QQueryOperations>
+      failureMessagesProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'failureMessage');
+      return query.addPropertyName(r'failureMessages');
     });
   }
 

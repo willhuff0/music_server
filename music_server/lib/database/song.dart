@@ -66,7 +66,8 @@ class Song {
 }
 
 String getSongStorageDir(MusicServerPaths paths, String id) => p.join(paths.storagePath, 'songs', id);
-String getSongFilePath(MusicServerPaths paths, String id, AudioPreset preset) => p.join(paths.storagePath, 'songs', id, '${preset.quality.outputFileName}.${preset.format.fileType}');
+String getSongAudioFilePath(MusicServerPaths paths, String id, AudioPreset preset) => p.join(paths.storagePath, 'songs', id, 'audio', '${preset.quality.outputFileName}.${preset.format.fileType}');
+String getSongImageFilePath(MusicServerPaths paths, String id, ImageSize size) => p.join(paths.storagePath, 'songs', id, 'images', '${size.resolution}.webp');
 
 Set<String> getPhoneticCodesOfWord(String word) {
   final phonetic = _phoneticsEncoder.encode(word)!;

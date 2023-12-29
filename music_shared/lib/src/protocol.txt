@@ -1,3 +1,7 @@
+String /status ()
+
+byte[] /speedTest/<size: int [.5, 1, (int > 1)...] MB> ()
+
 /auth/createUser : IdentityToken token (
     "name": String (2 <= length <= 24),
     "email": String (emailValidator),
@@ -31,6 +35,18 @@ String "songId" /song/create (
     "content-length": int (< 100000000 B (100 MB)),
 ) byte[] (length < 100000000 B (100 MB))
 
+/song/uploadImage (
+    "token": IdentityToken,
+    "songId": String,
+    "fileExtension": String [.png, .jpg, ...],
+    "content-length": int (< 100000000 B (100 MB)),
+) byte[] (length < 100000000 B (100 MB))
+
+/song/uploadDone (
+    "token": IdentityToken,
+    "songId": String,
+)
+
 byte[] /song/getData (
     "token": IdentityToken,
     "songId": String,
@@ -40,11 +56,11 @@ byte[] /song/getData (
     "quality": int ?= 2 [0: low, 1: medium, 2: high],
 )
 
+byte[] /song/getImage/<songId: String>/<size: int ?= 0 [0: 128x128, 1: 512x512, 2: 1024x1024, 3: 2048x2048, 4: 4096x4096]> ()
+
 Song[] /song/search (
     "token": IdentityToken,
     "query": String (length <= 32),
     "start": int?,
     "limit": int? (<= 10),
 )
-
-byte[] /speedTest/{size [.5, 1, (int > 1)...] (MB)} ()

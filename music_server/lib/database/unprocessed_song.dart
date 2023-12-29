@@ -21,6 +21,8 @@ class UnprocessedSong {
   final int numParts;
   int numPartsReceived;
 
+  String? imageFileExtension;
+
   UnprocessedSong({
     this.isarId = Isar.autoIncrement,
     required this.id,
@@ -30,6 +32,7 @@ class UnprocessedSong {
     required this.fileExtension,
     required this.numParts,
     required this.numPartsReceived,
+    required this.imageFileExtension,
   });
 
   UnprocessedSong.create({
@@ -43,4 +46,5 @@ class UnprocessedSong {
   }) : numPartsReceived = 0;
 }
 
-String getUnprocessedSongInputFilePath(MusicServerPaths paths, String id, String fileExtension) => p.join(paths.storagePath, 'unprocessed_songs', id, 'input$fileExtension');
+String getUnprocessedSongAudioInputFilePath(MusicServerPaths paths, String id, String fileExtension) => p.join(paths.storagePath, 'unprocessed_songs', id, 'audio$fileExtension');
+String getUnprocessedSongImageInputFilePath(MusicServerPaths paths, String id, String imageFileExtension) => p.join(paths.storagePath, 'unprocessed_songs', id, 'image$imageFileExtension');
