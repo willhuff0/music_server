@@ -32,3 +32,14 @@ class AudioPreset {
   @override
   String toString() => '{${format.name}, ${quality.name}}';
 }
+
+enum Genre {
+  hipHop,
+  pop,
+  folk,
+  experimental,
+  rock,
+  international,
+  electronic,
+  instrumental,
+}

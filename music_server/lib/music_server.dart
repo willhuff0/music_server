@@ -135,9 +135,10 @@ final musicServerCustomHandlers = [
   CustomHandler(path: '/speedTest/<size>', handle: speedTestHandler),
 
   // Auth
-  CustomHandler(path: '/auth/createUser', handle: createUserHandler),
-  CustomHandler(path: '/auth/startSession', handle: startSessionHandler),
-  CustomHandlerAuthRequired(path: '/auth/getName', handle: getNameHandler),
+  CustomHandler(path: '/auth/createUser', handle: authCreateUserHandler),
+  CustomHandler(path: '/auth/startSession', handle: authStartSessionHandler),
+  CustomHandlerAuthRequired(path: '/auth/getName', handle: authGetNameHandler),
+  CustomHandlerAuthRequired(path: '/auth/searchUser', handle: authSearchUserHandler),
 
   // Song
   CustomHandlerAuthRequired(path: '/song/create', handle: songCreateHandler),
@@ -147,6 +148,7 @@ final musicServerCustomHandlers = [
   CustomHandlerAuthRequired(path: '/song/getData', handle: songGetDataHandler),
   CustomHandler(path: '/song/getImage/<songId>/<size>', handle: songGetImageHandler),
   CustomHandlerAuthRequired(path: '/song/search', handle: songSearchHandler),
+  CustomHandlerAuthRequired(path: '/song/filter', handle: songFilterHandler),
 ];
 
 Response statusHandler(Request request, MusicServerThreadData threadData) {

@@ -347,8 +347,7 @@ Future<String?> processImage({required MusicServerPaths paths, required String i
 
       final encodeParameters = [inputFile, '-resize', '${size.resolution}^', '-gravity', 'center', '-extent', size.resolution, outputFile];
 
-      //final transcodeResult = await Process.run(paths.magickPath, encodeParameters);
-      final transcodeResult = await Process.run('magick', encodeParameters);
+      final transcodeResult = await Process.run(paths.magickPath, encodeParameters);
       if (transcodeResult.exitCode != 0) return 'magick transcode on size $size exited with an error (${transcodeResult.exitCode}): ${transcodeResult.stderr}';
 
       return null;

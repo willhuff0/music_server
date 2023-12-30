@@ -32,14 +32,19 @@ const UserSchema = CollectionSchema(
       name: r'name',
       type: IsarType.string,
     ),
-    r'password': PropertySchema(
+    r'namePhonetics': PropertySchema(
       id: 3,
+      name: r'namePhonetics',
+      type: IsarType.stringList,
+    ),
+    r'password': PropertySchema(
+      id: 4,
       name: r'password',
       type: IsarType.object,
       target: r'HashedUserPassword',
     ),
     r'tier': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'tier',
       type: IsarType.byte,
       enumMap: _UsertierEnumValueMap,
@@ -76,6 +81,19 @@ const UserSchema = CollectionSchema(
           caseSensitive: true,
         )
       ],
+    ),
+    r'namePhonetics': IndexSchema(
+      id: -8167915883527909840,
+      name: r'namePhonetics',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'namePhonetics',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
     )
   },
   links: {},
@@ -95,6 +113,13 @@ int _userEstimateSize(
   bytesCount += 3 + object.email.length * 3;
   bytesCount += 3 + object.id.length * 3;
   bytesCount += 3 + object.name.length * 3;
+  bytesCount += 3 + object.namePhonetics.length * 3;
+  {
+    for (var i = 0; i < object.namePhonetics.length; i++) {
+      final value = object.namePhonetics[i];
+      bytesCount += value.length * 3;
+    }
+  }
   bytesCount += 3 +
       HashedUserPasswordSchema.estimateSize(
           object.password, allOffsets[HashedUserPassword]!, allOffsets);
@@ -110,13 +135,14 @@ void _userSerialize(
   writer.writeString(offsets[0], object.email);
   writer.writeString(offsets[1], object.id);
   writer.writeString(offsets[2], object.name);
+  writer.writeStringList(offsets[3], object.namePhonetics);
   writer.writeObject<HashedUserPassword>(
-    offsets[3],
+    offsets[4],
     allOffsets,
     HashedUserPasswordSchema.serialize,
     object.password,
   );
-  writer.writeByte(offsets[4], object.tier.index);
+  writer.writeByte(offsets[5], object.tier.index);
 }
 
 User _userDeserialize(
@@ -130,13 +156,14 @@ User _userDeserialize(
     id: reader.readString(offsets[1]),
     isarId: id,
     name: reader.readString(offsets[2]),
+    namePhonetics: reader.readStringList(offsets[3]) ?? [],
     password: reader.readObjectOrNull<HashedUserPassword>(
-          offsets[3],
+          offsets[4],
           HashedUserPasswordSchema.deserialize,
           allOffsets,
         ) ??
         HashedUserPassword(),
-    tier: _UsertierValueEnumMap[reader.readByteOrNull(offsets[4])] ??
+    tier: _UsertierValueEnumMap[reader.readByteOrNull(offsets[5])] ??
         UserTier.free,
   );
   return object;
@@ -156,13 +183,15 @@ P _userDeserializeProp<P>(
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 4:
       return (reader.readObjectOrNull<HashedUserPassword>(
             offset,
             HashedUserPasswordSchema.deserialize,
             allOffsets,
           ) ??
           HashedUserPassword()) as P;
-    case 4:
+    case 5:
       return (_UsertierValueEnumMap[reader.readByteOrNull(offset)] ??
           UserTier.free) as P;
     default:
@@ -301,6 +330,14 @@ extension UserQueryWhereSort on QueryBuilder<User, User, QWhere> {
   QueryBuilder<User, User, QAfterWhere> anyIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
+    });
+  }
+
+  QueryBuilder<User, User, QAfterWhere> anyNamePhoneticsElement() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'namePhonetics'),
+      );
     });
   }
 }
@@ -452,6 +489,142 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
               lower: [],
               upper: [email],
               includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<User, User, QAfterWhereClause> namePhoneticsElementEqualTo(
+      String namePhoneticsElement) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'namePhonetics',
+        value: [namePhoneticsElement],
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterWhereClause> namePhoneticsElementNotEqualTo(
+      String namePhoneticsElement) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'namePhonetics',
+              lower: [],
+              upper: [namePhoneticsElement],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'namePhonetics',
+              lower: [namePhoneticsElement],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'namePhonetics',
+              lower: [namePhoneticsElement],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'namePhonetics',
+              lower: [],
+              upper: [namePhoneticsElement],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<User, User, QAfterWhereClause> namePhoneticsElementGreaterThan(
+    String namePhoneticsElement, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'namePhonetics',
+        lower: [namePhoneticsElement],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterWhereClause> namePhoneticsElementLessThan(
+    String namePhoneticsElement, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'namePhonetics',
+        lower: [],
+        upper: [namePhoneticsElement],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterWhereClause> namePhoneticsElementBetween(
+    String lowerNamePhoneticsElement,
+    String upperNamePhoneticsElement, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'namePhonetics',
+        lower: [lowerNamePhoneticsElement],
+        includeLower: includeLower,
+        upper: [upperNamePhoneticsElement],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterWhereClause> namePhoneticsElementStartsWith(
+      String NamePhoneticsElementPrefix) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'namePhonetics',
+        lower: [NamePhoneticsElementPrefix],
+        upper: ['$NamePhoneticsElementPrefix\u{FFFFF}'],
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterWhereClause> namePhoneticsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'namePhonetics',
+        value: [''],
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterWhereClause> namePhoneticsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.lessThan(
+              indexName: r'namePhonetics',
+              upper: [''],
+            ))
+            .addWhereClause(IndexWhereClause.greaterThan(
+              indexName: r'namePhonetics',
+              lower: [''],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.greaterThan(
+              indexName: r'namePhonetics',
+              lower: [''],
+            ))
+            .addWhereClause(IndexWhereClause.lessThan(
+              indexName: r'namePhonetics',
+              upper: [''],
             ));
       }
     });
@@ -895,6 +1068,225 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
+  QueryBuilder<User, User, QAfterFilterCondition> namePhoneticsElementEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'namePhonetics',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition>
+      namePhoneticsElementGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'namePhonetics',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> namePhoneticsElementLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'namePhonetics',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> namePhoneticsElementBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'namePhonetics',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition>
+      namePhoneticsElementStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'namePhonetics',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> namePhoneticsElementEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'namePhonetics',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> namePhoneticsElementContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'namePhonetics',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> namePhoneticsElementMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'namePhonetics',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition>
+      namePhoneticsElementIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'namePhonetics',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition>
+      namePhoneticsElementIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'namePhonetics',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> namePhoneticsLengthEqualTo(
+      int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'namePhonetics',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> namePhoneticsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'namePhonetics',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> namePhoneticsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'namePhonetics',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> namePhoneticsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'namePhonetics',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition>
+      namePhoneticsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'namePhonetics',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> namePhoneticsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'namePhonetics',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
   QueryBuilder<User, User, QAfterFilterCondition> tierEqualTo(UserTier value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1093,6 +1485,12 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
     });
   }
 
+  QueryBuilder<User, User, QDistinct> distinctByNamePhonetics() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'namePhonetics');
+    });
+  }
+
   QueryBuilder<User, User, QDistinct> distinctByTier() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'tier');
@@ -1122,6 +1520,12 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
   QueryBuilder<User, String, QQueryOperations> nameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'name');
+    });
+  }
+
+  QueryBuilder<User, List<String>, QQueryOperations> namePhoneticsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'namePhonetics');
     });
   }
 

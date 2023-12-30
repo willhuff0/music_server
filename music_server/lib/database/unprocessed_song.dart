@@ -1,5 +1,6 @@
 import 'package:isar/isar.dart';
 import 'package:music_server/music_server.dart';
+import 'package:music_shared/music_shared.dart';
 import 'package:path/path.dart' as p;
 
 part 'unprocessed_song.g.dart';
@@ -12,6 +13,9 @@ class UnprocessedSong {
   final String id;
 
   final String owner;
+
+  @enumerated
+  final List<Genre> genres;
 
   final String name;
   final String description;
@@ -27,6 +31,7 @@ class UnprocessedSong {
     this.isarId = Isar.autoIncrement,
     required this.id,
     required this.owner,
+    required this.genres,
     required this.name,
     required this.description,
     required this.fileExtension,
@@ -39,6 +44,7 @@ class UnprocessedSong {
     this.isarId = Isar.autoIncrement,
     required this.id,
     required this.owner,
+    required this.genres,
     required this.name,
     required this.description,
     required this.fileExtension,

@@ -22,33 +22,39 @@ const SongSchema = CollectionSchema(
       name: r'description',
       type: IsarType.string,
     ),
-    r'id': PropertySchema(
+    r'genres': PropertySchema(
       id: 1,
+      name: r'genres',
+      type: IsarType.byteList,
+      enumMap: _SonggenresEnumValueMap,
+    ),
+    r'id': PropertySchema(
+      id: 2,
       name: r'id',
       type: IsarType.string,
     ),
     r'name': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'name',
       type: IsarType.string,
     ),
     r'namePhonetics': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'namePhonetics',
       type: IsarType.stringList,
     ),
     r'numPlays': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'numPlays',
       type: IsarType.long,
     ),
     r'owner': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'owner',
       type: IsarType.string,
     ),
     r'timestamp': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'timestamp',
       type: IsarType.dateTime,
     )
@@ -69,6 +75,32 @@ const SongSchema = CollectionSchema(
           name: r'id',
           type: IndexType.hash,
           caseSensitive: true,
+        )
+      ],
+    ),
+    r'owner': IndexSchema(
+      id: 937942649497171216,
+      name: r'owner',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'owner',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    ),
+    r'genres': IndexSchema(
+      id: 7272600453950102276,
+      name: r'genres',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'genres',
+          type: IndexType.value,
+          caseSensitive: false,
         )
       ],
     ),
@@ -101,6 +133,7 @@ int _songEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.description.length * 3;
+  bytesCount += 3 + object.genres.length;
   bytesCount += 3 + object.id.length * 3;
   bytesCount += 3 + object.name.length * 3;
   bytesCount += 3 + object.namePhonetics.length * 3;
@@ -121,12 +154,13 @@ void _songSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.description);
-  writer.writeString(offsets[1], object.id);
-  writer.writeString(offsets[2], object.name);
-  writer.writeStringList(offsets[3], object.namePhonetics);
-  writer.writeLong(offsets[4], object.numPlays);
-  writer.writeString(offsets[5], object.owner);
-  writer.writeDateTime(offsets[6], object.timestamp);
+  writer.writeByteList(offsets[1], object.genres.map((e) => e.index).toList());
+  writer.writeString(offsets[2], object.id);
+  writer.writeString(offsets[3], object.name);
+  writer.writeStringList(offsets[4], object.namePhonetics);
+  writer.writeLong(offsets[5], object.numPlays);
+  writer.writeString(offsets[6], object.owner);
+  writer.writeDateTime(offsets[7], object.timestamp);
 }
 
 Song _songDeserialize(
@@ -137,13 +171,18 @@ Song _songDeserialize(
 ) {
   final object = Song(
     description: reader.readString(offsets[0]),
-    id: reader.readString(offsets[1]),
+    genres: reader
+            .readByteList(offsets[1])
+            ?.map((e) => _SonggenresValueEnumMap[e] ?? Genre.hipHop)
+            .toList() ??
+        [],
+    id: reader.readString(offsets[2]),
     isarId: id,
-    name: reader.readString(offsets[2]),
-    namePhonetics: reader.readStringList(offsets[3]) ?? [],
-    numPlays: reader.readLongOrNull(offsets[4]) ?? 0,
-    owner: reader.readString(offsets[5]),
-    timestamp: reader.readDateTime(offsets[6]),
+    name: reader.readString(offsets[3]),
+    namePhonetics: reader.readStringList(offsets[4]) ?? [],
+    numPlays: reader.readLongOrNull(offsets[5]) ?? 0,
+    owner: reader.readString(offsets[6]),
+    timestamp: reader.readDateTime(offsets[7]),
   );
   return object;
 }
@@ -158,21 +197,48 @@ P _songDeserializeProp<P>(
     case 0:
       return (reader.readString(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader
+              .readByteList(offset)
+              ?.map((e) => _SonggenresValueEnumMap[e] ?? Genre.hipHop)
+              .toList() ??
+          []) as P;
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
-      return (reader.readStringList(offset) ?? []) as P;
-    case 4:
-      return (reader.readLongOrNull(offset) ?? 0) as P;
-    case 5:
       return (reader.readString(offset)) as P;
+    case 4:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 5:
+      return (reader.readLongOrNull(offset) ?? 0) as P;
     case 6:
+      return (reader.readString(offset)) as P;
+    case 7:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
+
+const _SonggenresEnumValueMap = {
+  'hipHop': 0,
+  'pop': 1,
+  'folk': 2,
+  'experimental': 3,
+  'rock': 4,
+  'international': 5,
+  'electronic': 6,
+  'instrumental': 7,
+};
+const _SonggenresValueEnumMap = {
+  0: Genre.hipHop,
+  1: Genre.pop,
+  2: Genre.folk,
+  3: Genre.experimental,
+  4: Genre.rock,
+  5: Genre.international,
+  6: Genre.electronic,
+  7: Genre.instrumental,
+};
 
 Id _songGetId(Song object) {
   return object.isarId;
@@ -244,6 +310,14 @@ extension SongQueryWhereSort on QueryBuilder<Song, Song, QWhere> {
   QueryBuilder<Song, Song, QAfterWhere> anyIsarId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterWhere> anyGenresElement() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'genres'),
+      );
     });
   }
 
@@ -362,6 +436,139 @@ extension SongQueryWhere on QueryBuilder<Song, Song, QWhereClause> {
               includeUpper: false,
             ));
       }
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterWhereClause> ownerEqualTo(String owner) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'owner',
+        value: [owner],
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterWhereClause> ownerNotEqualTo(String owner) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'owner',
+              lower: [],
+              upper: [owner],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'owner',
+              lower: [owner],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'owner',
+              lower: [owner],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'owner',
+              lower: [],
+              upper: [owner],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterWhereClause> genresElementEqualTo(
+      Genre genresElement) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'genres',
+        value: [genresElement],
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterWhereClause> genresElementNotEqualTo(
+      Genre genresElement) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'genres',
+              lower: [],
+              upper: [genresElement],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'genres',
+              lower: [genresElement],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'genres',
+              lower: [genresElement],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'genres',
+              lower: [],
+              upper: [genresElement],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterWhereClause> genresElementGreaterThan(
+    Genre genresElement, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'genres',
+        lower: [genresElement],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterWhereClause> genresElementLessThan(
+    Genre genresElement, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'genres',
+        lower: [],
+        upper: [genresElement],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterWhereClause> genresElementBetween(
+    Genre lowerGenresElement,
+    Genre upperGenresElement, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'genres',
+        lower: [lowerGenresElement],
+        includeLower: includeLower,
+        upper: [upperGenresElement],
+        includeUpper: includeUpper,
+      ));
     });
   }
 
@@ -630,6 +837,143 @@ extension SongQueryFilter on QueryBuilder<Song, Song, QFilterCondition> {
         property: r'description',
         value: '',
       ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> genresElementEqualTo(
+      Genre value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'genres',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> genresElementGreaterThan(
+    Genre value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'genres',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> genresElementLessThan(
+    Genre value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'genres',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> genresElementBetween(
+    Genre lower,
+    Genre upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'genres',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> genresLengthEqualTo(
+      int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'genres',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> genresIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'genres',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> genresIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'genres',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> genresLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'genres',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> genresLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'genres',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> genresLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'genres',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
     });
   }
 
@@ -1566,6 +1910,12 @@ extension SongQueryWhereDistinct on QueryBuilder<Song, Song, QDistinct> {
     });
   }
 
+  QueryBuilder<Song, Song, QDistinct> distinctByGenres() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'genres');
+    });
+  }
+
   QueryBuilder<Song, Song, QDistinct> distinctById(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1616,6 +1966,12 @@ extension SongQueryProperty on QueryBuilder<Song, Song, QQueryProperty> {
   QueryBuilder<Song, String, QQueryOperations> descriptionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'description');
+    });
+  }
+
+  QueryBuilder<Song, List<Genre>, QQueryOperations> genresProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'genres');
     });
   }
 

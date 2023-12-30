@@ -7,6 +7,7 @@ import 'package:music_server/database/song.dart';
 import 'package:music_server/database/transcode_operation.dart';
 import 'package:music_server/database/unprocessed_song.dart';
 import 'package:music_server/music_server.dart';
+import 'package:music_server/phonetics.dart';
 import 'package:music_server/stateless_server/stateless_server.dart';
 import 'package:music_shared/music_shared.dart';
 import 'package:path/path.dart' as p;
@@ -37,12 +38,21 @@ FutureOr<Response> songCreateHandler(Request request, MusicServerThreadData thre
   if (description == null) return Response.badRequest();
   if (!_validateNewSongDescription(description)) return Response.badRequest();
 
+  final genreInts = (map['genres'] as List?)?.cast<int?>();
+  if (genreInts == null || genreInts.isEmpty) return Response.badRequest();
+  final genres = <Genre>{};
+  for (final genreInt in genreInts) {
+    if (genreInt == null || genreInt < 0 || genreInt > Genre.values.length) return Response.badRequest();
+    genres.add(Genre.values[genreInt]);
+  }
+
   final songId = _uuid.v7();
   final owner = identityToken.userId!;
 
   final unprocessedSong = UnprocessedSong.create(
     id: songId,
     owner: owner,
+    genres: genres.toList(),
     name: name,
     description: description,
     fileExtension: fileExtension,
@@ -264,4 +274,56 @@ FutureOr<Response> songSearchHandler(Request request, MusicServerThreadData thre
   final searchResults = threadData.isar.songs.where().anyOf(queryPhonetics, (q, element) => q.namePhoneticsElementEqualTo(element)).offset(start).limit(limit).findAllSync();
 
   return Response.ok(jsonEncode(searchResults.map((song) => song.toJson()).toList()));
+}
+
+FutureOr<Response> songFilterHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) {
+  final ownerString = request.headers['owner'];
+
+  final genresString = request.headers['genres'];
+  Set<Genre>? genres;
+  if (genresString != null) {
+    final genreInts = (jsonDecode(genresString) as List?)?.cast<int?>();
+    if (genreInts == null || genreInts.isEmpty) return Response.badRequest();
+    genres = <Genre>{};
+    for (final genreInt in genreInts) {
+      if (genreInt == null || genreInt < 0 || genreInt > Genre.values.length) return Response.badRequest();
+      genres.add(Genre.values[genreInt]);
+    }
+  }
+
+  if (ownerString == null && genresString == null) return Response.badRequest();
+
+  int start;
+  final startString = request.headers['start'];
+  if (startString != null) {
+    final startInt = int.tryParse(startString);
+    if (startInt == null || startInt < 0) return Response.badRequest();
+    start = startInt;
+  } else {
+    start = 0;
+  }
+
+  int limit;
+  final limitString = request.headers['limit'];
+  if (limitString != null) {
+    final limitInt = int.tryParse(limitString);
+    if (limitInt == null || limitInt < 0 || limitInt > 10) return Response.badRequest();
+    limit = limitInt;
+  } else {
+    limit = 10;
+  }
+
+  List<Song> filterResult;
+  if (ownerString == null) {
+    filterResult = threadData.isar.songs.where().anyOf(genres!, (q, element) => q.genresElementEqualTo(element)).sortByNameDesc().offset(start).limit(limit).findAllSync();
+  } else {
+    var query = threadData.isar.songs.where().ownerEqualTo(ownerString);
+    if (genres != null) {
+      filterResult = query.filter().anyOf(genres, (q, element) => q.genresElementEqualTo(element)).sortByNameDesc().offset(start).limit(limit).findAllSync();
+    } else {
+      filterResult = query.sortByNameDesc().offset(start).limit(limit).findAllSync();
+    }
+  }
+
+  return Response.ok(jsonEncode(filterResult.map((song) => song.toJson()).toList()));
 }

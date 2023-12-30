@@ -5,6 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:isar/isar.dart';
 import 'package:music_server/music_server.dart';
+import 'package:music_server/phonetics.dart';
 import 'package:music_server/stateless_server/stateless_server.dart';
 
 part 'user.g.dart';
@@ -18,6 +19,10 @@ class User {
 
   final String name;
 
+  final Set<String> _namePhonetics;
+  @Index(type: IndexType.value, caseSensitive: false)
+  List<String> get namePhonetics => _namePhonetics.toList();
+
   @Index(unique: true)
   final String email;
 
@@ -30,24 +35,16 @@ class User {
     this.isarId = Isar.autoIncrement,
     required this.id,
     required this.name,
+    required List<String> namePhonetics,
     required this.email,
     required this.password,
     required this.tier,
-  });
+  }) : _namePhonetics = namePhonetics.toSet();
 
-  static User create({
-    required String id,
-    required String name,
-    required String email,
-    required HashedUserPassword password,
-  }) =>
-      User(
-        id: id,
-        name: name,
-        email: email,
-        password: password,
-        tier: UserTier.free,
-      );
+  User.create({required this.id, required this.name, required this.email, required this.password})
+      : isarId = Isar.autoIncrement,
+        _namePhonetics = getPhoneticCodesOfQuery(name),
+        tier = UserTier.paid;
 
   MusicServerIdentityTokenClaims getIdentityTokenClaims() => MusicServerIdentityTokenClaims(
         tier: tier,
@@ -58,6 +55,11 @@ class User {
     final encodedToken = identityTokenAuthority.signAndEncodeToken(identityToken);
     return encodedToken;
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+      };
 }
 
 // TODO: swap for native c library

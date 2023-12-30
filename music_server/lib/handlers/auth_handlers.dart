@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:isar/isar.dart';
 import 'package:music_server/database/user.dart';
 import 'package:music_server/database/user_activity.dart';
 import 'package:music_server/music_server.dart';
+import 'package:music_server/phonetics.dart';
 import 'package:music_server/stateless_server/stateless_server.dart';
 import 'package:music_shared/music_shared.dart';
 import 'package:uuid/data.dart';
@@ -13,7 +15,7 @@ import 'package:uuid/uuid.dart';
 
 final _secureUuid = Uuid(goptions: GlobalOptions(CryptoRNG()));
 
-FutureOr<Response> createUserHandler(Request request, MusicServerThreadData threadData) async {
+FutureOr<Response> authCreateUserHandler(Request request, MusicServerThreadData threadData) async {
   final name = request.headers['name'];
   if (name == null) return Response.badRequest();
   if (!validateUserName(name)) return Response.badRequest();
@@ -57,7 +59,7 @@ FutureOr<Response> createUserHandler(Request request, MusicServerThreadData thre
   return Response.ok('', headers: {'token': encodedToken});
 }
 
-FutureOr<Response> startSessionHandler(Request request, MusicServerThreadData threadData) async {
+FutureOr<Response> authStartSessionHandler(Request request, MusicServerThreadData threadData) async {
   var uid = request.headers['uid'];
   final email = request.headers['email'];
   if (uid == null) {
@@ -85,11 +87,41 @@ FutureOr<Response> startSessionHandler(Request request, MusicServerThreadData th
   return Response.ok('', headers: {'token': encodedToken});
 }
 
-FutureOr<Response> getNameHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) async {
+FutureOr<Response> authGetNameHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) async {
   if (identityToken.userId == null) return Response.ok('Anonymous');
 
   final dbUser = threadData.isar.users.getByIdSync(identityToken.userId!);
   if (dbUser == null) return Response.forbidden('');
 
   return Response.ok(dbUser.name);
+}
+
+FutureOr<Response> authSearchUserHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) {
+  final queryString = request.headers['query'];
+  if (queryString == null || queryString.isEmpty || queryString.length > userNameMaxLength) return Response.badRequest();
+
+  int start;
+  final startString = request.headers['start'];
+  if (startString != null) {
+    final startInt = int.tryParse(startString);
+    if (startInt == null || startInt < 0) return Response.badRequest();
+    start = startInt;
+  } else {
+    start = 0;
+  }
+
+  int limit;
+  final limitString = request.headers['limit'];
+  if (limitString != null) {
+    final limitInt = int.tryParse(limitString);
+    if (limitInt == null || limitInt < 0 || limitInt > 10) return Response.badRequest();
+    limit = limitInt;
+  } else {
+    limit = 10;
+  }
+
+  final queryPhonetics = getPhoneticCodesOfQuery(queryString);
+  final searchResults = threadData.isar.users.where().anyOf(queryPhonetics, (q, element) => q.namePhoneticsElementEqualTo(element)).offset(start).limit(limit).findAllSync();
+
+  return Response.ok(jsonEncode(searchResults.map((user) => user.toJson()).toList()));
 }

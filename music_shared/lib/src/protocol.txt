@@ -19,6 +19,13 @@ byte[] /speedTest/<size: int [.5, 1, (int > 1)...] MB> ()
     "token": IdentityToken,
 )
 
+User[] /auth/searchUser (
+    "token": IdentityToken,
+    "query": String (length <= 24),
+    "start": int?,
+    "limit": int? (<= 10),
+)
+
 String "songId" /song/create (
     "token": IdentityToken,
 ) {
@@ -61,6 +68,15 @@ byte[] /song/getImage/<songId: String>/<size: int ?= 0 [0: 128x128, 1: 512x512, 
 Song[] /song/search (
     "token": IdentityToken,
     "query": String (length <= 32),
+    "start": int?,
+    "limit": int? (<= 10),
+)
+
+# Must provide an owner and/or genres
+Song[] /song/filter (
+    "token": IdentityToken,
+    "owner": String?,
+    "genres": List<int [0: hipHop, 1: pop, 2: folk, 3: experimental, 4: rock, 5: international, 6: electronic, 7: instrumental]>?,
     "start": int?,
     "limit": int? (<= 10),
 )
