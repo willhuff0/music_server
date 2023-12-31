@@ -19,6 +19,8 @@ class UnprocessedSong {
   @enumerated
   final List<Genre> genres;
 
+  final bool explicit;
+
   final String name;
   final String description;
 
@@ -35,6 +37,7 @@ class UnprocessedSong {
     required this.owner,
     required this.duration,
     required this.genres,
+    required this.explicit,
     required this.name,
     required this.description,
     required this.fileExtension,
@@ -49,6 +52,7 @@ class UnprocessedSong {
     required this.owner,
     required this.duration,
     required this.genres,
+    required this.explicit,
     required this.name,
     required this.description,
     required this.fileExtension,

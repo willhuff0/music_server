@@ -27,39 +27,44 @@ const SongSchema = CollectionSchema(
       name: r'duration',
       type: IsarType.long,
     ),
-    r'genres': PropertySchema(
+    r'explicit': PropertySchema(
       id: 2,
+      name: r'explicit',
+      type: IsarType.bool,
+    ),
+    r'genres': PropertySchema(
+      id: 3,
       name: r'genres',
       type: IsarType.byteList,
       enumMap: _SonggenresEnumValueMap,
     ),
     r'id': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'id',
       type: IsarType.string,
     ),
     r'name': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'name',
       type: IsarType.string,
     ),
     r'namePhonetics': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'namePhonetics',
       type: IsarType.stringList,
     ),
     r'numPlays': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'numPlays',
       type: IsarType.long,
     ),
     r'owner': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'owner',
       type: IsarType.string,
     ),
     r'timestamp': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'timestamp',
       type: IsarType.dateTime,
     )
@@ -160,13 +165,14 @@ void _songSerialize(
 ) {
   writer.writeString(offsets[0], object.description);
   writer.writeLong(offsets[1], object.duration);
-  writer.writeByteList(offsets[2], object.genres.map((e) => e.index).toList());
-  writer.writeString(offsets[3], object.id);
-  writer.writeString(offsets[4], object.name);
-  writer.writeStringList(offsets[5], object.namePhonetics);
-  writer.writeLong(offsets[6], object.numPlays);
-  writer.writeString(offsets[7], object.owner);
-  writer.writeDateTime(offsets[8], object.timestamp);
+  writer.writeBool(offsets[2], object.explicit);
+  writer.writeByteList(offsets[3], object.genres.map((e) => e.index).toList());
+  writer.writeString(offsets[4], object.id);
+  writer.writeString(offsets[5], object.name);
+  writer.writeStringList(offsets[6], object.namePhonetics);
+  writer.writeLong(offsets[7], object.numPlays);
+  writer.writeString(offsets[8], object.owner);
+  writer.writeDateTime(offsets[9], object.timestamp);
 }
 
 Song _songDeserialize(
@@ -178,18 +184,19 @@ Song _songDeserialize(
   final object = Song(
     description: reader.readString(offsets[0]),
     duration: reader.readLong(offsets[1]),
+    explicit: reader.readBool(offsets[2]),
     genres: reader
-            .readByteList(offsets[2])
+            .readByteList(offsets[3])
             ?.map((e) => _SonggenresValueEnumMap[e] ?? Genre.hipHop)
             .toList() ??
         [],
-    id: reader.readString(offsets[3]),
+    id: reader.readString(offsets[4]),
     isarId: id,
-    name: reader.readString(offsets[4]),
-    namePhonetics: reader.readStringList(offsets[5]) ?? [],
-    numPlays: reader.readLongOrNull(offsets[6]) ?? 0,
-    owner: reader.readString(offsets[7]),
-    timestamp: reader.readDateTime(offsets[8]),
+    name: reader.readString(offsets[5]),
+    namePhonetics: reader.readStringList(offsets[6]) ?? [],
+    numPlays: reader.readLongOrNull(offsets[7]) ?? 0,
+    owner: reader.readString(offsets[8]),
+    timestamp: reader.readDateTime(offsets[9]),
   );
   return object;
 }
@@ -206,22 +213,24 @@ P _songDeserializeProp<P>(
     case 1:
       return (reader.readLong(offset)) as P;
     case 2:
+      return (reader.readBool(offset)) as P;
+    case 3:
       return (reader
               .readByteList(offset)
               ?.map((e) => _SonggenresValueEnumMap[e] ?? Genre.hipHop)
               .toList() ??
           []) as P;
-    case 3:
-      return (reader.readString(offset)) as P;
     case 4:
       return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readStringList(offset) ?? []) as P;
-    case 6:
-      return (reader.readLongOrNull(offset) ?? 0) as P;
-    case 7:
       return (reader.readString(offset)) as P;
+    case 6:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 7:
+      return (reader.readLongOrNull(offset) ?? 0) as P;
     case 8:
+      return (reader.readString(offset)) as P;
+    case 9:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -897,6 +906,15 @@ extension SongQueryFilter on QueryBuilder<Song, Song, QFilterCondition> {
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> explicitEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'explicit',
+        value: value,
       ));
     });
   }
@@ -1828,6 +1846,18 @@ extension SongQuerySortBy on QueryBuilder<Song, Song, QSortBy> {
     });
   }
 
+  QueryBuilder<Song, Song, QAfterSortBy> sortByExplicit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'explicit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterSortBy> sortByExplicitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'explicit', Sort.desc);
+    });
+  }
+
   QueryBuilder<Song, Song, QAfterSortBy> sortById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -1911,6 +1941,18 @@ extension SongQuerySortThenBy on QueryBuilder<Song, Song, QSortThenBy> {
   QueryBuilder<Song, Song, QAfterSortBy> thenByDurationDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'duration', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterSortBy> thenByExplicit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'explicit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterSortBy> thenByExplicitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'explicit', Sort.desc);
     });
   }
 
@@ -2001,6 +2043,12 @@ extension SongQueryWhereDistinct on QueryBuilder<Song, Song, QDistinct> {
     });
   }
 
+  QueryBuilder<Song, Song, QDistinct> distinctByExplicit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'explicit');
+    });
+  }
+
   QueryBuilder<Song, Song, QDistinct> distinctByGenres() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'genres');
@@ -2063,6 +2111,12 @@ extension SongQueryProperty on QueryBuilder<Song, Song, QQueryProperty> {
   QueryBuilder<Song, int, QQueryOperations> durationProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'duration');
+    });
+  }
+
+  QueryBuilder<Song, bool, QQueryOperations> explicitProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'explicit');
     });
   }
 

@@ -27,44 +27,49 @@ const UnprocessedSongSchema = CollectionSchema(
       name: r'duration',
       type: IsarType.long,
     ),
-    r'fileExtension': PropertySchema(
+    r'explicit': PropertySchema(
       id: 2,
+      name: r'explicit',
+      type: IsarType.bool,
+    ),
+    r'fileExtension': PropertySchema(
+      id: 3,
       name: r'fileExtension',
       type: IsarType.string,
     ),
     r'genres': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'genres',
       type: IsarType.byteList,
       enumMap: _UnprocessedSonggenresEnumValueMap,
     ),
     r'id': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'id',
       type: IsarType.string,
     ),
     r'imageFileExtension': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'imageFileExtension',
       type: IsarType.string,
     ),
     r'name': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'name',
       type: IsarType.string,
     ),
     r'numParts': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'numParts',
       type: IsarType.long,
     ),
     r'numPartsReceived': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'numPartsReceived',
       type: IsarType.long,
     ),
     r'owner': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'owner',
       type: IsarType.string,
     )
@@ -126,14 +131,15 @@ void _unprocessedSongSerialize(
 ) {
   writer.writeString(offsets[0], object.description);
   writer.writeLong(offsets[1], object.duration);
-  writer.writeString(offsets[2], object.fileExtension);
-  writer.writeByteList(offsets[3], object.genres.map((e) => e.index).toList());
-  writer.writeString(offsets[4], object.id);
-  writer.writeString(offsets[5], object.imageFileExtension);
-  writer.writeString(offsets[6], object.name);
-  writer.writeLong(offsets[7], object.numParts);
-  writer.writeLong(offsets[8], object.numPartsReceived);
-  writer.writeString(offsets[9], object.owner);
+  writer.writeBool(offsets[2], object.explicit);
+  writer.writeString(offsets[3], object.fileExtension);
+  writer.writeByteList(offsets[4], object.genres.map((e) => e.index).toList());
+  writer.writeString(offsets[5], object.id);
+  writer.writeString(offsets[6], object.imageFileExtension);
+  writer.writeString(offsets[7], object.name);
+  writer.writeLong(offsets[8], object.numParts);
+  writer.writeLong(offsets[9], object.numPartsReceived);
+  writer.writeString(offsets[10], object.owner);
 }
 
 UnprocessedSong _unprocessedSongDeserialize(
@@ -145,19 +151,20 @@ UnprocessedSong _unprocessedSongDeserialize(
   final object = UnprocessedSong(
     description: reader.readString(offsets[0]),
     duration: reader.readLong(offsets[1]),
-    fileExtension: reader.readString(offsets[2]),
+    explicit: reader.readBool(offsets[2]),
+    fileExtension: reader.readString(offsets[3]),
     genres: reader
-            .readByteList(offsets[3])
+            .readByteList(offsets[4])
             ?.map((e) => _UnprocessedSonggenresValueEnumMap[e] ?? Genre.hipHop)
             .toList() ??
         [],
-    id: reader.readString(offsets[4]),
-    imageFileExtension: reader.readStringOrNull(offsets[5]),
+    id: reader.readString(offsets[5]),
+    imageFileExtension: reader.readStringOrNull(offsets[6]),
     isarId: id,
-    name: reader.readString(offsets[6]),
-    numParts: reader.readLong(offsets[7]),
-    numPartsReceived: reader.readLong(offsets[8]),
-    owner: reader.readString(offsets[9]),
+    name: reader.readString(offsets[7]),
+    numParts: reader.readLong(offsets[8]),
+    numPartsReceived: reader.readLong(offsets[9]),
+    owner: reader.readString(offsets[10]),
   );
   return object;
 }
@@ -174,25 +181,27 @@ P _unprocessedSongDeserializeProp<P>(
     case 1:
       return (reader.readLong(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 3:
+      return (reader.readString(offset)) as P;
+    case 4:
       return (reader
               .readByteList(offset)
               ?.map(
                   (e) => _UnprocessedSonggenresValueEnumMap[e] ?? Genre.hipHop)
               .toList() ??
           []) as P;
-    case 4:
-      return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readStringOrNull(offset)) as P;
-    case 6:
       return (reader.readString(offset)) as P;
+    case 6:
+      return (reader.readStringOrNull(offset)) as P;
     case 7:
-      return (reader.readLong(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 8:
       return (reader.readLong(offset)) as P;
     case 9:
+      return (reader.readLong(offset)) as P;
+    case 10:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -603,6 +612,16 @@ extension UnprocessedSongQueryFilter
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, UnprocessedSong, QAfterFilterCondition>
+      explicitEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'explicit',
+        value: value,
       ));
     });
   }
@@ -1656,6 +1675,20 @@ extension UnprocessedSongQuerySortBy
   }
 
   QueryBuilder<UnprocessedSong, UnprocessedSong, QAfterSortBy>
+      sortByExplicit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'explicit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, UnprocessedSong, QAfterSortBy>
+      sortByExplicitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'explicit', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, UnprocessedSong, QAfterSortBy>
       sortByFileExtension() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fileExtension', Sort.asc);
@@ -1777,6 +1810,20 @@ extension UnprocessedSongQuerySortThenBy
       thenByDurationDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'duration', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, UnprocessedSong, QAfterSortBy>
+      thenByExplicit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'explicit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, UnprocessedSong, QAfterSortBy>
+      thenByExplicitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'explicit', Sort.desc);
     });
   }
 
@@ -1905,6 +1952,13 @@ extension UnprocessedSongQueryWhereDistinct
   }
 
   QueryBuilder<UnprocessedSong, UnprocessedSong, QDistinct>
+      distinctByExplicit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'explicit');
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, UnprocessedSong, QDistinct>
       distinctByFileExtension({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'fileExtension',
@@ -1980,6 +2034,12 @@ extension UnprocessedSongQueryProperty
   QueryBuilder<UnprocessedSong, int, QQueryOperations> durationProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'duration');
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, bool, QQueryOperations> explicitProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'explicit');
     });
   }
 

@@ -5,7 +5,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:music_client/client/auth.dart';
 
-const serverHost = '152.117.103.216';
+const serverHost = '127.0.0.1';
 const serverPort = 8081;
 final serverUri = Uri(host: serverHost, port: serverPort, scheme: 'http'); // TODO: enforce https
 

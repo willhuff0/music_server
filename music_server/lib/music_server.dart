@@ -15,6 +15,8 @@ import 'database/user.dart';
 
 const forceDebug = false;
 
+const rootPath = 'server_root';
+
 class MusicServerConfig extends ServerConfig {
   /// The number of workers spawned to serve requests
   final int numTranscodeWorkers;
@@ -91,7 +93,7 @@ class MusicServerPaths {
       root = p.dirname(Platform.resolvedExecutable);
     }
 
-    root = p.join(root, 'server_root');
+    root = p.join(root, rootPath);
 
     rootPath = root;
     databasePath = p.join(rootPath, 'database');

@@ -42,6 +42,9 @@ FutureOr<Response> songCreateHandler(Request request, MusicServerThreadData thre
   final duration = map['duration'] as int?;
   if (duration == null || duration < 1) return Response.badRequest();
 
+  final explicit = map['duration'] as bool?;
+  if (explicit == null) return Response.badRequest();
+
   final genreInts = (map['genres'] as List?)?.cast<int?>();
   if (genreInts == null || genreInts.isEmpty) return Response.badRequest();
   final genres = <Genre>{};
@@ -58,6 +61,7 @@ FutureOr<Response> songCreateHandler(Request request, MusicServerThreadData thre
     owner: owner,
     duration: duration,
     genres: genres.toList(),
+    explicit: explicit,
     name: name,
     description: description,
     fileExtension: fileExtension,
