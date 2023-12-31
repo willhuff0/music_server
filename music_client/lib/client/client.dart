@@ -26,7 +26,7 @@ void runSpeedTestOnConnectivityChanged() {
 Future<void> _runSpeedTest() async {
   const int sizeMB = 10;
 
-  final uri = serverUri.replace(path: '/speedTest/$sizeMB');
+  final uri = serverUri.resolve('/speedTest/$sizeMB');
 
   final stopwatch = Stopwatch()..start();
   await http.get(uri); // TODO: change to not include TCP overhead time
@@ -53,7 +53,7 @@ class ApiResponse {
 }
 
 /// Calls an api on the server.
-Future<ApiResponse> apiCall(String route, {Map<String, String> headers = const {}, Uint8List? body}) async {
+Future<ApiResponse> apiCall(String route, {Map<String, String> headers = const {}, Object? body}) async {
   final response = await http.put(serverUri.resolve(route), headers: headers, body: body);
   return ApiResponse(statusCode: response.statusCode, headers: response.headers, body: response.bodyBytes);
 }
@@ -63,9 +63,9 @@ Future<ApiResponse> apiCall(String route, {Map<String, String> headers = const {
 /// Returns an empty ApiResponse with status code 403 if identityToken is null and autoSessionRefresh fails.
 ///
 /// If the server responds with status code 403, this function will call startSessionWithSavedCredentials and retry the api call if a session was started.
-Future<ApiResponse> apiCallWithAuth(String route, {Map<String, String> headers = const {}, Uint8List? body}) => _apiCallWithAuth(route, headers: headers, body: body);
+Future<ApiResponse> apiCallWithAuth(String route, {Map<String, String> headers = const {}, Object? body}) => _apiCallWithAuth(route, headers: headers, body: body);
 
-Future<ApiResponse> _apiCallWithAuth(String route, {Map<String, String> headers = const {}, Uint8List? body, int retryCountInternal = 0}) async {
+Future<ApiResponse> _apiCallWithAuth(String route, {Map<String, String> headers = const {}, Object? body, int retryCountInternal = 0}) async {
   if (identityToken == null) {
     if (!await autoSessionRefresh()) {
       signOut();

@@ -4,7 +4,9 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   connectivity_plus
+  desktop_drop
   flutter_secure_storage_windows
+  just_audio_windows
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

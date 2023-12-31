@@ -33,6 +33,7 @@ String "songId" /song/create (
     "numParts": int,
     "name": String (1 <= length <= 50),
     "description": String (length <= 100),
+    "genres": String[] (length > 1),
 }
 
 /song/uploadData (

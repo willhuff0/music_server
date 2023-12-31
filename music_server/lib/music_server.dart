@@ -100,7 +100,7 @@ class MusicServerPaths {
     ffmpegPath = p.join(rootPath, 'tools', Platform.isWindows ? 'ffmpeg.exe' : 'ffmpeg');
     ffprobePath = p.join(rootPath, 'tools', Platform.isWindows ? 'ffprobe.exe' : 'ffprobe');
 
-    magickPath = p.join(rootPath, 'tools', Platform.isWindows ? 'magick.exe' : 'magick');
+    magickPath = Platform.isWindows ? p.join(rootPath, 'tools', 'magick.exe') : 'magick';
 
     Directory(databasePath).createSync(recursive: true);
     Directory(storagePath).createSync(recursive: true);

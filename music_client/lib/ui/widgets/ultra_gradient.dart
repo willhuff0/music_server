@@ -3,7 +3,7 @@ import 'dart:ui';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:music_client/ui/theme.dart';
+import 'package:music_client/theme.dart';
 
 const numPoints = 4;
 
@@ -12,6 +12,7 @@ class AnimatedUltraGradient extends StatefulWidget {
   final Duration maxStoppedDuration;
   final double opacity;
   final double pointSize;
+  final List<Color>? colors;
   final Widget? child;
 
   const AnimatedUltraGradient({
@@ -20,6 +21,7 @@ class AnimatedUltraGradient extends StatefulWidget {
     this.maxStoppedDuration = const Duration(milliseconds: 2000),
     this.opacity = 0.75,
     this.pointSize = 1000.0,
+    this.colors,
     this.child,
   });
 
@@ -32,7 +34,7 @@ class _AnimatedUltraGradientState extends State<AnimatedUltraGradient> with Tick
   late final AnimationController animationController;
 
   List<Color>? pointColors;
-  late final List<double> pointSizes;
+  late List<double> pointSizes;
 
   List<(double x, double y)>? pointPositionsA;
   List<(double x, double y)>? pointPositionsB;
@@ -41,20 +43,31 @@ class _AnimatedUltraGradientState extends State<AnimatedUltraGradient> with Tick
   late double maxWidth;
 
   @override
-  void initState() {
-    FragmentProgram.fromAsset('shaders/ultragradient.frag').then((value) {
-      if (!mounted) return;
-      setState(() => shader = value.fragmentShader());
-    });
-    animationController = AnimationController(vsync: this);
+  void didUpdateWidget(covariant AnimatedUltraGradient oldWidget) {
+    if (widget.pointSize != oldWidget.pointSize || !listEquals(widget.colors, oldWidget.colors)) update();
+    super.didUpdateWidget(oldWidget);
+  }
 
-    pointSizes = List.generate(4, (index) => widget.pointSize);
+  @override
+  void initState() {
+    loadShader();
+    animationController = AnimationController(vsync: this);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       animate();
     });
 
     super.initState();
+  }
+
+  void loadShader() async {
+    try {
+      final program = await FragmentProgram.fromAsset('shaders/ultragradient.frag');
+      if (!mounted) return;
+      setState(() => shader = program.fragmentShader());
+    } catch (e) {
+      print(e);
+    }
   }
 
   void animate() async {
@@ -73,6 +86,19 @@ class _AnimatedUltraGradientState extends State<AnimatedUltraGradient> with Tick
         sizeX: maxWidth,
         sizeY: maxHeight,
       );
+
+  void update() {
+    pointColors = widget.colors ??
+        [
+          darkTheme.colorScheme.inversePrimary,
+          darkTheme.colorScheme.errorContainer,
+          darkTheme.colorScheme.tertiaryContainer,
+          darkTheme.colorScheme.surfaceVariant,
+          //Colors.deepOrangeAccent,
+        ];
+
+    pointSizes = List.generate(4, (index) => widget.pointSize);
+  }
 
   @override
   void dispose() {
@@ -97,12 +123,7 @@ class _AnimatedUltraGradientState extends State<AnimatedUltraGradient> with Tick
                         pointPositionsB = getNextPointPositions();
                       }
 
-                      pointColors ??= [
-                        darkTheme.colorScheme.inversePrimary,
-                        darkTheme.colorScheme.errorContainer,
-                        darkTheme.colorScheme.tertiaryContainer,
-                        darkTheme.colorScheme.surfaceVariant,
-                      ]..shuffle();
+                      update();
 
                       final pointPositions = lerpPositions(pointPositionsA!, pointPositionsB!, animationController.value);
 
@@ -121,11 +142,7 @@ class _AnimatedUltraGradientState extends State<AnimatedUltraGradient> with Tick
               );
             },
           )
-        : const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
+        : widget.child ?? Container();
   }
 }
 

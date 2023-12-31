@@ -19,8 +19,8 @@ const maxImageUploadBytes = 100 * 1000 * 1000;
 final _uuid = Uuid();
 
 FutureOr<Response> songCreateHandler(Request request, MusicServerThreadData threadData, IdentityToken<MusicServerIdentityTokenClaims> identityToken) async {
-  if (identityToken.userId == null) return Response.forbidden('');
-  if (!identityToken.claims.canSongCreate()) return Response.forbidden('');
+  if (identityToken.userId == null) return Response.unauthorized('');
+  if (!identityToken.claims.canSongCreate()) return Response.unauthorized('');
 
   final map = jsonDecode(await request.readAsString()) as Map<String, dynamic>;
 
@@ -32,11 +32,11 @@ FutureOr<Response> songCreateHandler(Request request, MusicServerThreadData thre
 
   final name = map['name'] as String?;
   if (name == null) return Response.badRequest();
-  if (!_validateNewSongName(name)) return Response.badRequest();
+  if (!validateSongName(name)) return Response.badRequest();
 
   final description = map['description'] as String?;
   if (description == null) return Response.badRequest();
-  if (!_validateNewSongDescription(description)) return Response.badRequest();
+  if (!validateSongDescription(description)) return Response.badRequest();
 
   final genreInts = (map['genres'] as List?)?.cast<int?>();
   if (genreInts == null || genreInts.isEmpty) return Response.badRequest();
@@ -64,25 +64,9 @@ FutureOr<Response> songCreateHandler(Request request, MusicServerThreadData thre
   return Response.ok(songId);
 }
 
-bool _validateNewSongName(String name) {
-  const minLength = 1;
-  const maxLength = 50;
-
-  if (name.length < minLength || name.length > maxLength) return false;
-
-  return true;
-}
-
-bool _validateNewSongDescription(String description) {
-  const maxLength = 100;
-
-  if (description.length > maxLength) return false;
-
-  return true;
-}
-
 FutureOr<Response> songUploadDataHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) async {
   final contentLength = request.contentLength;
+  print(contentLength);
   if (contentLength == null || contentLength > maxUploadChunkBytes) return Response.badRequest();
 
   final songId = request.headers['songId'];
@@ -96,7 +80,7 @@ FutureOr<Response> songUploadDataHandler(Request request, MusicServerThreadData 
   final unprocessedSong = threadData.isar.unprocessedSongs.getByIdSync(songId);
   if (unprocessedSong == null) return Response.notFound('');
 
-  if (unprocessedSong.owner != identityToken.userId) return Response.forbidden('');
+  if (unprocessedSong.owner != identityToken.userId) return Response.unauthorized('');
 
   final inputPath = getUnprocessedSongAudioInputFilePath(threadData.paths, unprocessedSong.id, unprocessedSong.fileExtension);
 
@@ -136,7 +120,7 @@ FutureOr<Response> songUploadImageHandler(Request request, MusicServerThreadData
   final unprocessedSong = threadData.isar.unprocessedSongs.getByIdSync(songId);
   if (unprocessedSong == null) return Response.notFound('');
 
-  if (unprocessedSong.owner != identityToken.userId) return Response.forbidden('');
+  if (unprocessedSong.owner != identityToken.userId) return Response.unauthorized('');
 
   final inputPath = getUnprocessedSongImageInputFilePath(threadData.paths, unprocessedSong.id, fileExtension);
 
@@ -168,7 +152,7 @@ FutureOr<Response> songUploadDoneHandler(Request request, MusicServerThreadData 
   final unprocessedSong = threadData.isar.unprocessedSongs.getByIdSync(songId);
   if (unprocessedSong == null) return Response.notFound('');
 
-  if (unprocessedSong.owner != identityToken.userId) return Response.forbidden('');
+  if (unprocessedSong.owner != identityToken.userId) return Response.unauthorized('');
 
   if (unprocessedSong.numPartsReceived < unprocessedSong.numParts) return Response.notModified();
   if (unprocessedSong.imageFileExtension == null) return Response.notModified();
@@ -278,6 +262,7 @@ FutureOr<Response> songSearchHandler(Request request, MusicServerThreadData thre
 
 FutureOr<Response> songFilterHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) {
   final ownerString = request.headers['owner'];
+  if (ownerString != null && ownerString.isEmpty) return Response.badRequest();
 
   final genresString = request.headers['genres'];
   Set<Genre>? genres;
