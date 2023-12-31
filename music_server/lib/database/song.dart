@@ -17,6 +17,8 @@ class Song {
   @Index()
   final String owner;
 
+  final int duration;
+
   @Index(type: IndexType.value)
   @enumerated
   final List<Genre> genres;
@@ -37,6 +39,7 @@ class Song {
     this.isarId = Isar.autoIncrement,
     required this.id,
     required this.owner,
+    required this.duration,
     required this.genres,
     required this.timestamp,
     required this.name,
@@ -45,7 +48,7 @@ class Song {
     this.numPlays = 0,
   }) : _namePhonetics = namePhonetics.toSet();
 
-  Song.create({this.isarId = Isar.autoIncrement, required this.id, required this.owner, required this.genres, required this.name, required this.description})
+  Song.create({this.isarId = Isar.autoIncrement, required this.id, required this.owner, required this.duration, required this.genres, required this.name, required this.description})
       : timestamp = DateTime.now().toUtc(),
         _namePhonetics = getPhoneticCodesOfQuery(name),
         numPlays = 0;
@@ -53,6 +56,7 @@ class Song {
   Song.createFromUnprocessed(UnprocessedSong unprocessedSong, {this.isarId = Isar.autoIncrement})
       : id = unprocessedSong.id,
         owner = unprocessedSong.owner,
+        duration = unprocessedSong.duration,
         genres = unprocessedSong.genres,
         timestamp = DateTime.now().toUtc(),
         name = unprocessedSong.name,
@@ -63,6 +67,7 @@ class Song {
   Map<String, dynamic> toJson() => {
         'id': id,
         'owner': owner,
+        'duration': duration,
         'timestamp': timestamp.millisecondsSinceEpoch,
         'name': name,
         'description': description,

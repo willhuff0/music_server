@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:isar/isar.dart';
 import 'package:music_server/database/song.dart';
@@ -28,7 +29,7 @@ FutureOr<Response> songCreateHandler(Request request, MusicServerThreadData thre
   if (fileExtension == null) return Response.badRequest();
 
   final numParts = map['numParts'] as int?;
-  if (numParts == null) return Response.badRequest();
+  if (numParts == null || numParts < 1) return Response.badRequest();
 
   final name = map['name'] as String?;
   if (name == null) return Response.badRequest();
@@ -37,6 +38,9 @@ FutureOr<Response> songCreateHandler(Request request, MusicServerThreadData thre
   final description = map['description'] as String?;
   if (description == null) return Response.badRequest();
   if (!validateSongDescription(description)) return Response.badRequest();
+
+  final duration = map['duration'] as int?;
+  if (duration == null || duration < 1) return Response.badRequest();
 
   final genreInts = (map['genres'] as List?)?.cast<int?>();
   if (genreInts == null || genreInts.isEmpty) return Response.badRequest();
@@ -52,6 +56,7 @@ FutureOr<Response> songCreateHandler(Request request, MusicServerThreadData thre
   final unprocessedSong = UnprocessedSong.create(
     id: songId,
     owner: owner,
+    duration: duration,
     genres: genres.toList(),
     name: name,
     description: description,
@@ -207,7 +212,29 @@ FutureOr<Response> songGetDataHandler(Request request, MusicServerThreadData thr
   final audioFile = File(getSongAudioFilePath(threadData.paths, songId, preset));
   if (!audioFile.existsSync()) return Response.notFound('');
 
-  return Response.ok(audioFile.openRead(start, end), headers: {'content-type': 'audio/${preset.format.fileType}'});
+  final audioFileLength = audioFile.lengthSync();
+
+  int length;
+  if (end != null) {
+    if (start != null) {
+      length = end - start;
+    } else {
+      length = end;
+    }
+  } else {
+    if (start != null) {
+      length = audioFileLength - start;
+    } else {
+      length = audioFileLength;
+    }
+  }
+  length = min(length, audioFileLength);
+
+  return Response.ok(audioFile.openRead(start, end), headers: {
+    'content-type': 'audio/${preset.format.fileType}',
+    'content-length': length.toString(),
+    'source-length': audioFileLength.toString(),
+  });
 }
 
 FutureOr<Response> songGetImageHandler(Request request, MusicServerThreadData threadData) {

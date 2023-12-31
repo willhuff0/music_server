@@ -14,6 +14,8 @@ class UnprocessedSong {
 
   final String owner;
 
+  final int duration;
+
   @enumerated
   final List<Genre> genres;
 
@@ -31,6 +33,7 @@ class UnprocessedSong {
     this.isarId = Isar.autoIncrement,
     required this.id,
     required this.owner,
+    required this.duration,
     required this.genres,
     required this.name,
     required this.description,
@@ -44,6 +47,7 @@ class UnprocessedSong {
     this.isarId = Isar.autoIncrement,
     required this.id,
     required this.owner,
+    required this.duration,
     required this.genres,
     required this.name,
     required this.description,

@@ -22,44 +22,49 @@ const UnprocessedSongSchema = CollectionSchema(
       name: r'description',
       type: IsarType.string,
     ),
-    r'fileExtension': PropertySchema(
+    r'duration': PropertySchema(
       id: 1,
+      name: r'duration',
+      type: IsarType.long,
+    ),
+    r'fileExtension': PropertySchema(
+      id: 2,
       name: r'fileExtension',
       type: IsarType.string,
     ),
     r'genres': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'genres',
       type: IsarType.byteList,
       enumMap: _UnprocessedSonggenresEnumValueMap,
     ),
     r'id': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'id',
       type: IsarType.string,
     ),
     r'imageFileExtension': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'imageFileExtension',
       type: IsarType.string,
     ),
     r'name': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'name',
       type: IsarType.string,
     ),
     r'numParts': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'numParts',
       type: IsarType.long,
     ),
     r'numPartsReceived': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'numPartsReceived',
       type: IsarType.long,
     ),
     r'owner': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'owner',
       type: IsarType.string,
     )
@@ -120,14 +125,15 @@ void _unprocessedSongSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.description);
-  writer.writeString(offsets[1], object.fileExtension);
-  writer.writeByteList(offsets[2], object.genres.map((e) => e.index).toList());
-  writer.writeString(offsets[3], object.id);
-  writer.writeString(offsets[4], object.imageFileExtension);
-  writer.writeString(offsets[5], object.name);
-  writer.writeLong(offsets[6], object.numParts);
-  writer.writeLong(offsets[7], object.numPartsReceived);
-  writer.writeString(offsets[8], object.owner);
+  writer.writeLong(offsets[1], object.duration);
+  writer.writeString(offsets[2], object.fileExtension);
+  writer.writeByteList(offsets[3], object.genres.map((e) => e.index).toList());
+  writer.writeString(offsets[4], object.id);
+  writer.writeString(offsets[5], object.imageFileExtension);
+  writer.writeString(offsets[6], object.name);
+  writer.writeLong(offsets[7], object.numParts);
+  writer.writeLong(offsets[8], object.numPartsReceived);
+  writer.writeString(offsets[9], object.owner);
 }
 
 UnprocessedSong _unprocessedSongDeserialize(
@@ -138,19 +144,20 @@ UnprocessedSong _unprocessedSongDeserialize(
 ) {
   final object = UnprocessedSong(
     description: reader.readString(offsets[0]),
-    fileExtension: reader.readString(offsets[1]),
+    duration: reader.readLong(offsets[1]),
+    fileExtension: reader.readString(offsets[2]),
     genres: reader
-            .readByteList(offsets[2])
+            .readByteList(offsets[3])
             ?.map((e) => _UnprocessedSonggenresValueEnumMap[e] ?? Genre.hipHop)
             .toList() ??
         [],
-    id: reader.readString(offsets[3]),
-    imageFileExtension: reader.readStringOrNull(offsets[4]),
+    id: reader.readString(offsets[4]),
+    imageFileExtension: reader.readStringOrNull(offsets[5]),
     isarId: id,
-    name: reader.readString(offsets[5]),
-    numParts: reader.readLong(offsets[6]),
-    numPartsReceived: reader.readLong(offsets[7]),
-    owner: reader.readString(offsets[8]),
+    name: reader.readString(offsets[6]),
+    numParts: reader.readLong(offsets[7]),
+    numPartsReceived: reader.readLong(offsets[8]),
+    owner: reader.readString(offsets[9]),
   );
   return object;
 }
@@ -165,25 +172,27 @@ P _unprocessedSongDeserializeProp<P>(
     case 0:
       return (reader.readString(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 2:
+      return (reader.readString(offset)) as P;
+    case 3:
       return (reader
               .readByteList(offset)
               ?.map(
                   (e) => _UnprocessedSonggenresValueEnumMap[e] ?? Genre.hipHop)
               .toList() ??
           []) as P;
-    case 3:
-      return (reader.readString(offset)) as P;
     case 4:
-      return (reader.readStringOrNull(offset)) as P;
-    case 5:
       return (reader.readString(offset)) as P;
+    case 5:
+      return (reader.readStringOrNull(offset)) as P;
     case 6:
-      return (reader.readLong(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 7:
       return (reader.readLong(offset)) as P;
     case 8:
+      return (reader.readLong(offset)) as P;
+    case 9:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -538,6 +547,62 @@ extension UnprocessedSongQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'description',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, UnprocessedSong, QAfterFilterCondition>
+      durationEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'duration',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, UnprocessedSong, QAfterFilterCondition>
+      durationGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'duration',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, UnprocessedSong, QAfterFilterCondition>
+      durationLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'duration',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, UnprocessedSong, QAfterFilterCondition>
+      durationBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'duration',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -1577,6 +1642,20 @@ extension UnprocessedSongQuerySortBy
   }
 
   QueryBuilder<UnprocessedSong, UnprocessedSong, QAfterSortBy>
+      sortByDuration() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'duration', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, UnprocessedSong, QAfterSortBy>
+      sortByDurationDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'duration', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, UnprocessedSong, QAfterSortBy>
       sortByFileExtension() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fileExtension', Sort.asc);
@@ -1684,6 +1763,20 @@ extension UnprocessedSongQuerySortThenBy
       thenByDescriptionDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'description', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, UnprocessedSong, QAfterSortBy>
+      thenByDuration() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'duration', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, UnprocessedSong, QAfterSortBy>
+      thenByDurationDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'duration', Sort.desc);
     });
   }
 
@@ -1805,6 +1898,13 @@ extension UnprocessedSongQueryWhereDistinct
   }
 
   QueryBuilder<UnprocessedSong, UnprocessedSong, QDistinct>
+      distinctByDuration() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'duration');
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, UnprocessedSong, QDistinct>
       distinctByFileExtension({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'fileExtension',
@@ -1874,6 +1974,12 @@ extension UnprocessedSongQueryProperty
       descriptionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'description');
+    });
+  }
+
+  QueryBuilder<UnprocessedSong, int, QQueryOperations> durationProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'duration');
     });
   }
 
