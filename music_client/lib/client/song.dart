@@ -3,21 +3,24 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:just_audio/just_audio.dart';
+import 'package:music_client/client/auth.dart';
 import 'package:music_client/client/client.dart';
 import 'package:music_shared/music_shared.dart';
 
 class MusicServerAudioSource extends StreamAudioSource {
-  final String token;
-  final String songId;
+  final Song song;
   final AudioPreset preset;
 
-  MusicServerAudioSource({super.tag, required this.token, required this.songId, required this.preset});
+  MusicServerAudioSource({super.tag, required this.song, required this.preset});
+
+  @override
+  Duration? get duration => song.duration;
 
   @override
   Future<StreamAudioResponse> request([int? start, int? end]) async {
     final request = await HttpClient().get(serverHost, serverPort, '/song/getData');
-    request.headers.add('token', token);
-    request.headers.add('songId', songId);
+    request.headers.add('token', identityToken!);
+    request.headers.add('songId', song.id);
     if (start != null) request.headers.add('start', start);
     if (end != null) request.headers.add('end', end);
     request.headers.add('format', preset.format.index);
@@ -26,11 +29,11 @@ class MusicServerAudioSource extends StreamAudioSource {
     final response = await request.close();
 
     return StreamAudioResponse(
-      sourceLength: null,
-      contentLength: null,
-      offset: null,
+      sourceLength: int.parse(response.headers['source-length']!.first),
+      contentLength: response.contentLength,
+      offset: start,
       stream: response,
-      contentType: 'audio/${preset.format.fileType}',
+      contentType: preset.format.mimeType,
     );
   }
 }
@@ -39,6 +42,7 @@ class Song {
   final String id;
   final String owner;
   final DateTime timestamp;
+  final Duration duration;
   final String name;
   final String description;
   final int numPlays;
@@ -47,6 +51,7 @@ class Song {
     required this.id,
     required this.owner,
     required this.timestamp,
+    required this.duration,
     required this.name,
     required this.description,
     required this.numPlays,
@@ -56,6 +61,7 @@ class Song {
         id: json['id'],
         owner: json['owner'],
         timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp']),
+        duration: Duration(milliseconds: json['duration']),
         name: json['name'],
         description: json['description'],
         numPlays: json['numPlays'],
@@ -91,7 +97,7 @@ Future<List<Song>?> filterSongs({String? owner, List<Genre>? genres, int? start,
   return (jsonDecode(response.bodyString) as List).map((e) => Song.fromJson(e)).toList();
 }
 
-Future<String?> createSong({required String fileExtension, required int numParts, required String name, required String description, required List<Genre> genres}) async {
+Future<String?> createSong({required String fileExtension, required int numParts, required String name, required String description, required Duration duration, required List<Genre> genres}) async {
   if (!validateSongName(name)) return null;
   if (!validateSongDescription(description)) return null;
 
@@ -100,6 +106,7 @@ Future<String?> createSong({required String fileExtension, required int numParts
     'numParts': numParts,
     'name': name,
     'description': description,
+    'duration': duration.inMilliseconds,
     'genres': genres.map((e) => e.index).toList(),
   };
   final bodyJson = jsonEncode(bodyMap);

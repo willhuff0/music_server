@@ -15,12 +15,13 @@ enum CompressedAudioQuality {
 }
 
 enum CompressedAudioFormat {
-  opus(fileType: 'opus'),
-  aac(fileType: 'aac');
+  opus(fileType: 'opus', mimeType: 'audio/opus'),
+  aac(fileType: 'm4a', mimeType: 'audio/mp4');
 
   final String fileType;
+  final String mimeType;
 
-  const CompressedAudioFormat({required this.fileType});
+  const CompressedAudioFormat({required this.fileType, required this.mimeType});
 }
 
 class AudioPreset {

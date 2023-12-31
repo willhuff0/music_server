@@ -20,6 +20,8 @@ class LandingScaffold extends StatefulWidget {
 }
 
 class _LandingScaffoldState extends State<LandingScaffold> {
+  late final GlobalKey autofillKey;
+
   late final PageController _pageController;
 
   late final TapGestureRecognizer backGestureRecognizer;
@@ -31,12 +33,14 @@ class _LandingScaffoldState extends State<LandingScaffold> {
 
   @override
   void initState() {
+    autofillKey = GlobalKey();
     _pageController = PageController();
     backGestureRecognizer = TapGestureRecognizer()..onTap = () => animateToPage(0);
     state = LandingState();
     pages = [
       LandingPage(
         state: state,
+        autofillKey: autofillKey,
         onNextPage: () => animateToPage(1),
       ),
       ConfirmPasswordPage(
@@ -64,6 +68,7 @@ class _LandingScaffoldState extends State<LandingScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       backgroundColor: Colors.black,
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -150,7 +155,10 @@ class _LandingScaffoldState extends State<LandingScaffold> {
               maxStoppedDuration: const Duration(milliseconds: 500),
               opacity: .75,
               pointSize: 1000.0,
-              child: pageView,
+              child: Scaffold(
+                backgroundColor: Colors.transparent,
+                body: SafeArea(child: pageView),
+              ),
             );
           }
         },

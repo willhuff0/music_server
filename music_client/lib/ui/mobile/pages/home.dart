@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:music_client/client/auth.dart';
 import 'package:music_client/ui/widgets/song_image.dart';
 import 'package:music_client/ui/widgets/ultra_gradient.dart';
 import 'package:music_shared/music_shared.dart';
@@ -52,13 +53,17 @@ class _HomePageState extends State<HomePage> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 4.0),
                     child: IconButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        signOut();
+                      },
                       icon: CircleAvatar(
                         backgroundColor: Theme.of(context).colorScheme.inversePrimary.withOpacity(0.5),
-                        child: Text('W',
-                            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                  color: Theme.of(context).colorScheme.onBackground.withOpacity(0.75),
-                                )),
+                        child: Text(
+                          'W',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                color: Theme.of(context).colorScheme.onBackground.withOpacity(0.75),
+                              ),
+                        ),
                       ),
                     ),
                   ),

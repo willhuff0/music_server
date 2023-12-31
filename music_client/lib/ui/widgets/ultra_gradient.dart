@@ -5,8 +5,6 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:music_client/theme.dart';
 
-const numPoints = 4;
-
 class AnimatedUltraGradient extends StatefulWidget {
   final Duration duration;
   final Duration maxStoppedDuration;
@@ -81,8 +79,8 @@ class _AnimatedUltraGradientState extends State<AnimatedUltraGradient> with Tick
   }
 
   List<(double x, double y)> getNextPointPositions() => poissonDiskSample(
-        count: numPoints,
-        radius: maxHeight / numPoints,
+        count: 4,
+        radius: maxHeight / 4,
         sizeX: maxWidth,
         sizeY: maxHeight,
       );
@@ -185,7 +183,8 @@ class UltraGradientPainter extends CustomPainter {
       shader.setFloat(i, pointColors[k].red.toDouble() / 255.0);
       shader.setFloat(i + 1, pointColors[k].green.toDouble() / 255.0);
       shader.setFloat(i + 2, pointColors[k].blue.toDouble() / 255.0);
-      i += 3;
+      shader.setFloat(i + 3, pointColors[k].opacity);
+      i += 4;
     }
 
     canvas.drawRect(

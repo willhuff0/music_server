@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:music_client/client/auth.dart' as auth;
 import 'package:music_client/ui/landing/landing_scaffold.dart';
 import 'package:music_shared/music_shared.dart';
 
 class LandingPage extends StatefulWidget {
   final LandingState state;
+  final GlobalKey autofillKey;
 
   final void Function() onNextPage;
 
-  const LandingPage({super.key, required this.state, required this.onNextPage});
+  const LandingPage({
+    super.key,
+    required this.state,
+    required this.autofillKey,
+    required this.onNextPage,
+  });
 
   @override
   State<LandingPage> createState() => _LandingPageState();
@@ -17,6 +24,9 @@ class LandingPage extends StatefulWidget {
 class _LandingPageState extends State<LandingPage> with AutomaticKeepAliveClientMixin {
   late final GlobalKey formKey;
 
+  late final TextEditingController emailController;
+  late final TextEditingController passwordController;
+
   var passwordIncorrect = false;
 
   var loading = false;
@@ -24,6 +34,8 @@ class _LandingPageState extends State<LandingPage> with AutomaticKeepAliveClient
   @override
   void initState() {
     formKey = GlobalKey(debugLabel: 'landing_formKey');
+    emailController = TextEditingController();
+    passwordController = TextEditingController();
     super.initState();
   }
 
@@ -112,6 +124,7 @@ class _LandingPageState extends State<LandingPage> with AutomaticKeepAliveClient
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     TextFormField(
+                      controller: emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.username, AutofillHints.newUsername],
@@ -149,6 +162,7 @@ class _LandingPageState extends State<LandingPage> with AutomaticKeepAliveClient
                     ),
                     const SizedBox(height: 8.0),
                     TextFormField(
+                      controller: passwordController,
                       keyboardType: TextInputType.visiblePassword,
                       obscureText: true,
                       textInputAction: TextInputAction.next,

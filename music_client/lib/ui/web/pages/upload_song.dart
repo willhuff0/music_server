@@ -39,6 +39,7 @@ class _UploadSongPageState extends State<UploadSongPage> {
 
   Uint8List? audioBytes;
   String? audioFileName;
+  Duration? duration;
 
   Uint8List? imageBytes;
   String? imageFileName;
@@ -58,7 +59,8 @@ class _UploadSongPageState extends State<UploadSongPage> {
       await audioPlayer.stop();
       audioBytes = bytes;
       try {
-        await audioPlayer.setAudioSource(BytesAudioSource(fileName!, audioBytes!));
+        final newDuration = await audioPlayer.setAudioSource(BytesAudioSource(fileName!, audioBytes!));
+        if (mounted) setState(() => duration = newDuration);
       } on PlayerException catch (e) {
         // iOS/macOS: maps to NSError.code
         // Android: maps to ExoPlayerException.type
@@ -128,6 +130,7 @@ class _UploadSongPageState extends State<UploadSongPage> {
         numParts: 1,
         name: name!,
         description: description!,
+        duration: duration!,
         genres: [Genre.pop], // Add genres dropdown
       );
       if (songId == null) {
@@ -484,6 +487,7 @@ class _UploadSongPageState extends State<UploadSongPage> {
                                 description: description ?? '',
                                 image: image,
                                 colors: colors,
+                                duration: duration ?? const Duration(minutes: 1),
                                 audioPlayer: audioPlayer,
                               ),
                             ),

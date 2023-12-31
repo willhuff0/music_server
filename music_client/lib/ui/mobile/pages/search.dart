@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:music_client/client/song.dart';
+import 'package:music_client/ui/mobile/app_scaffold.dart';
 import 'package:music_client/ui/widgets/song_image.dart';
 import 'package:music_shared/music_shared.dart';
 
@@ -54,7 +55,7 @@ class _SearchPageState extends State<SearchPage> {
         SafeArea(
           bottom: false,
           child: Padding(
-            padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0),
+            padding: const EdgeInsets.only(left: 14.0, right: 14.0, top: 14.0, bottom: 8.0),
             child: TextField(
               controller: controller,
               onChanged: (value) => onChanged(),
@@ -70,6 +71,7 @@ class _SearchPageState extends State<SearchPage> {
                   size: 28.0,
                   color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
                 ),
+                isDense: true,
                 prefixIconConstraints: const BoxConstraints(minWidth: 56.0),
                 hintText: 'Search for music',
                 hintStyle: TextStyle(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.6)),
@@ -91,53 +93,62 @@ class _SearchPageState extends State<SearchPage> {
                         )
                       : ListView.builder(
                           shrinkWrap: true,
-                          itemCount: songs!.length + 30,
-                          padding: const EdgeInsets.all(24.0),
+                          itemCount: songs!.length,
+                          padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 124.0),
                           itemBuilder: (context, index) {
-                            final song = songs![0];
-                            return Card(
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)),
-                              child: SizedBox(
-                                height: 80.0,
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(4.0),
-                                      child: AspectRatio(
-                                        aspectRatio: 1.0,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(14.0),
-                                            image: DecorationImage(image: NetworkImage(getSongImageUrl(song.id, ImageSize.thumb))),
+                            final song = songs![index];
+                            return InkWell(
+                              splashFactory: InkRipple.splashFactory,
+                              onTap: () {
+                                selectSong(context, song);
+                              },
+                              child: Card(
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)),
+                                child: SizedBox(
+                                  height: 80.0,
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.all(4.0),
+                                        child: AspectRatio(
+                                          aspectRatio: 1.0,
+                                          child: Hero(
+                                            tag: '${song.id}-image',
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(14.0),
+                                                image: DecorationImage(image: NetworkImage(getSongImageUrl(song.id, ImageSize.thumb))),
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    Expanded(
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(left: 6.0, right: 18.0, top: 8.0, bottom: 8.0),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(song.name, style: Theme.of(context).textTheme.titleMedium),
-                                            const SizedBox(height: 4.0),
-                                            Expanded(
-                                              child: Padding(
-                                                padding: const EdgeInsets.only(left: 4.0),
-                                                child: Text(
-                                                  song.description,
-                                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.8)),
-                                                  overflow: TextOverflow.ellipsis,
-                                                  maxLines: 2,
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(left: 6.0, right: 18.0, top: 8.0, bottom: 8.0),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(song.name, style: Theme.of(context).textTheme.titleMedium),
+                                              const SizedBox(height: 4.0),
+                                              Expanded(
+                                                child: Padding(
+                                                  padding: const EdgeInsets.only(left: 4.0),
+                                                  child: Text(
+                                                    song.description,
+                                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.8)),
+                                                    overflow: TextOverflow.ellipsis,
+                                                    maxLines: 2,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             );

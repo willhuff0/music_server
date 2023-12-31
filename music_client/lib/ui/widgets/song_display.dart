@@ -1,17 +1,20 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:music_client/ui/widgets/ultra_gradient.dart';
 
 class SongDisplay extends StatefulWidget {
+  final String? id;
   final String name;
   final String description;
   final ImageProvider? image;
   final List<Color>? colors;
+  final Duration duration;
   final AudioPlayer audioPlayer;
 
-  const SongDisplay({super.key, required this.name, required this.description, required this.image, required this.colors, required this.audioPlayer});
+  const SongDisplay({super.key, this.id, required this.name, required this.description, required this.image, required this.colors, required this.duration, required this.audioPlayer});
 
   @override
   State<SongDisplay> createState() => _SongDisplayState();
@@ -19,10 +22,9 @@ class SongDisplay extends StatefulWidget {
 
 class _SongDisplayState extends State<SongDisplay> {
   late final StreamSubscription _playerStateSubscription;
-  late final StreamSubscription _durationSubscription;
+
   late final StreamSubscription _positionSubscription;
 
-  Duration? duration;
   var position = 0.0;
   var dragging = false;
   var playing = false;
@@ -30,9 +32,9 @@ class _SongDisplayState extends State<SongDisplay> {
   @override
   void initState() {
     _playerStateSubscription = widget.audioPlayer.playerStateStream.listen((event) => setState(() => playing = event.playing));
-    _durationSubscription = widget.audioPlayer.durationStream.listen((event) => setState(() => duration = event));
+
     _positionSubscription = widget.audioPlayer.positionStream.listen((event) {
-      if (!dragging) setState(() => position = duration != null ? event.inMilliseconds.toDouble() / duration!.inMilliseconds.toDouble() : 0.0);
+      if (!dragging) setState(() => position = clampDouble(event.inMilliseconds.toDouble() / widget.duration.inMilliseconds, 0.0, 1.0));
     });
     super.initState();
   }
@@ -40,7 +42,7 @@ class _SongDisplayState extends State<SongDisplay> {
   @override
   void dispose() {
     _playerStateSubscription.cancel();
-    _durationSubscription.cancel();
+
     _positionSubscription.cancel();
     super.dispose();
   }
@@ -49,10 +51,10 @@ class _SongDisplayState extends State<SongDisplay> {
   Widget build(BuildContext context) {
     return AnimatedUltraGradient(
       duration: const Duration(seconds: 10),
-      pointSize: 600.0,
+      pointSize: 500.0,
       colors: widget.colors,
       child: Align(
-        alignment: const Alignment(0.0, -0.3),
+        alignment: const Alignment(0.0, 0.2),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
@@ -61,38 +63,90 @@ class _SongDisplayState extends State<SongDisplay> {
             children: [
               AspectRatio(
                 aspectRatio: 1.0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24.0),
-                    image: widget.image != null ? DecorationImage(image: widget.image!) : null,
-                    color: widget.image == null ? Colors.black : null,
+                child: Hero(
+                  tag: '${widget.id}-image',
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(18.0),
+                      image: widget.image != null ? DecorationImage(image: widget.image!) : null,
+                      color: widget.image == null ? Colors.black : null,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(height: 20.0),
+              const SizedBox(height: 48.0),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Text(widget.name, style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w700)),
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: Text(widget.name, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
               ),
-              const SizedBox(height: 18.0),
+              const SizedBox(height: 4.0),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
                 child: Text(
                   widget.description,
-                  style: Theme.of(context).textTheme.bodyMedium,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.normal),
                   textAlign: TextAlign.justify,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(height: 36.0),
+              const SizedBox(height: 24.0),
+              SliderTheme(
+                data: const SliderThemeData(
+                  //thumbShape: RoundSliderThumbShape(enabledThumbRadius: 7.0),
+                  //overlayShape: RoundSliderOverlayShape(overlayRadius: 18.0),
+                  trackShape: CustomSliderTrackShape(),
+                  thumbShape: CustomSliderThumbShape(enabledThumbRadius: 7.0),
+                  overlayShape: CustomSliderOverlayShape(overlayRadius: 10.0),
+                ),
+                child: Slider(
+                    value: position,
+                    activeColor: Colors.white.withOpacity(0.7),
+                    inactiveColor: Colors.grey.shade900.withOpacity(0.7),
+                    thumbColor: Colors.white,
+                    onChanged: (value) => setState(() => position = value),
+                    onChangeStart: (value) => dragging = true,
+                    onChangeEnd: (value) {
+                      position = value;
+                      widget.audioPlayer.seek(Duration(milliseconds: (position * widget.duration.inMilliseconds).round()));
+                      dragging = false;
+                    }),
+              ),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 40.0,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        durationToString(Duration(milliseconds: (position * widget.duration.inMilliseconds).round())),
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ),
+                  ),
+                  Expanded(child: Container()),
+                  SizedBox(
+                    width: 40.0,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        durationToString(widget.duration),
+                        style: Theme.of(context).textTheme.labelSmall,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 0.0),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton(
                     onPressed: () {},
-                    icon: Icon(Icons.fast_rewind_rounded, color: Colors.white.withOpacity(0.7)),
-                    iconSize: 60.0,
+                    icon: Icon(Icons.skip_previous_rounded, color: Colors.white.withOpacity(0.7)),
+                    iconSize: 48.0,
                   ),
-                  const SizedBox(width: 8.0),
+                  const SizedBox(width: 14.0),
                   IconButton(
                     onPressed: () {
                       if (playing) {
@@ -102,44 +156,14 @@ class _SongDisplayState extends State<SongDisplay> {
                       }
                     },
                     icon: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white.withOpacity(0.7)),
-                    iconSize: 60.0,
+                    iconSize: 68.0,
                   ),
-                  const SizedBox(width: 8.0),
+                  const SizedBox(width: 14.0),
                   IconButton(
                     onPressed: () {},
-                    icon: Icon(Icons.fast_forward_rounded, color: Colors.white.withOpacity(0.7)),
-                    iconSize: 60.0,
+                    icon: Icon(Icons.skip_next_rounded, color: Colors.white.withOpacity(0.7)),
+                    iconSize: 48.0,
                   ),
-                ],
-              ),
-              const SizedBox(height: 8.0),
-              Row(
-                children: [
-                  Text(duration != null ? durationToString(Duration(milliseconds: (position * duration!.inMilliseconds).round())) : '0:00'),
-                  Expanded(
-                    child: SliderTheme(
-                      data: const SliderThemeData(
-                        thumbShape: RoundSliderThumbShape(enabledThumbRadius: 7.0),
-                        overlayShape: RoundSliderOverlayShape(overlayRadius: 18.0),
-                      ),
-                      child: Slider(
-                        value: position,
-                        activeColor: Colors.white.withOpacity(0.7),
-                        inactiveColor: Colors.grey.shade900.withOpacity(0.7),
-                        thumbColor: Colors.white,
-                        onChanged: duration != null ? (value) => setState(() => position = value) : null,
-                        onChangeStart: duration != null ? (value) => dragging = true : null,
-                        onChangeEnd: duration != null
-                            ? (value) {
-                                position = value;
-                                widget.audioPlayer.seek(Duration(milliseconds: (position * duration!.inMilliseconds).round()));
-                                dragging = false;
-                              }
-                            : null,
-                      ),
-                    ),
-                  ),
-                  Text(duration != null ? durationToString(duration!) : '0:00'),
                 ],
               ),
             ],
@@ -154,4 +178,67 @@ String durationToString(Duration duration) {
   String minutes = duration.inMinutes.remainder(60).abs().toString();
   String twoDigitSeconds = duration.inSeconds.remainder(60).abs().toString().padLeft(2, '0');
   return "$minutes:$twoDigitSeconds";
+}
+
+class CustomSliderTrackShape extends RoundedRectSliderTrackShape {
+  const CustomSliderTrackShape();
+  @override
+  Rect getPreferredRect({
+    required RenderBox parentBox,
+    Offset offset = Offset.zero,
+    required SliderThemeData sliderTheme,
+    bool isEnabled = false,
+    bool isDiscrete = false,
+  }) {
+    final trackHeight = sliderTheme.trackHeight;
+    final trackLeft = offset.dx;
+    final trackTop = offset.dy + (parentBox.size.height - trackHeight!) / 2;
+    final trackWidth = parentBox.size.width;
+    return Rect.fromLTWH(trackLeft, trackTop, trackWidth, trackHeight);
+  }
+}
+
+class CustomSliderThumbShape extends RoundSliderThumbShape {
+  const CustomSliderThumbShape({super.enabledThumbRadius = 10.0});
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    super.paint(context, center.translate(-(value - 0.5) / 0.5 * enabledThumbRadius, 0.0), activationAnimation: activationAnimation, enableAnimation: enableAnimation, isDiscrete: isDiscrete, labelPainter: labelPainter, parentBox: parentBox, sliderTheme: sliderTheme, textDirection: textDirection, value: value, textScaleFactor: textScaleFactor, sizeWithOverflow: sizeWithOverflow);
+  }
+}
+
+class CustomSliderOverlayShape extends RoundSliderOverlayShape {
+  final double thumbRadius;
+  const CustomSliderOverlayShape({this.thumbRadius = 10.0, super.overlayRadius});
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    super.paint(context, center.translate(-(value - 0.5) / 0.5 * thumbRadius, 0.0), activationAnimation: activationAnimation, enableAnimation: enableAnimation, isDiscrete: isDiscrete, labelPainter: labelPainter, parentBox: parentBox, sliderTheme: sliderTheme, textDirection: textDirection, value: value, textScaleFactor: textScaleFactor, sizeWithOverflow: sizeWithOverflow);
+  }
 }
