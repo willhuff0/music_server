@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:music_server/stateless_server/stateless_server.dart';
 
@@ -17,7 +18,7 @@ class CustomWorker implements Worker {
     }
   }
 
-  static Future<Worker> start(WorkerLaunchArgs args, Stream<dynamic> fromManagerStream, {String? debugName}) async {
+  static Future<Worker> start(WorkerLaunchArgs args, Stream<dynamic> fromManagerStream, SendPort toManagerPort, {String? debugName}) async {
     if (args is! CustomWorkerLaunchArgs) throw Exception('CustomWorker must be started with CustomWorkerLaunchArgs');
 
     final threadData = await args.createThreadData();

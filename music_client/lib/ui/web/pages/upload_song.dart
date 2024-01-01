@@ -5,6 +5,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:music_client/client/auth.dart';
 import 'package:music_client/client/song.dart';
 import 'package:music_client/ui/widgets/song_display.dart';
 import 'package:music_shared/music_shared.dart';
@@ -137,7 +138,7 @@ class _UploadSongPageState extends State<UploadSongPage> {
         fileExtension: p.extension(audioFileName!),
         numParts: 1,
         name: name!,
-        description: description!,
+        description: description ?? '',
         explicit: explicit,
         duration: duration!,
         genres: [Genre.pop], // Add genres dropdown
@@ -383,7 +384,7 @@ class _UploadSongPageState extends State<UploadSongPage> {
                                     const SizedBox(height: 8.0),
                                     const Text('•  On our end, we\'ll optimize your image for different devices:'),
                                     const SizedBox(height: 4.0),
-                                    const Text('    •  WebP with 4096x4096, 2048x2048, 1024x1024, 512x512,\n       and 128x128 pixels'),
+                                    const Text('    •  WebP with 2048x2048, 1024x1024, 512x512, 256x256,\n       and 128x128 pixels'),
                                     const SizedBox(height: 24.0),
                                     Center(
                                       child: SizedBox(
@@ -511,6 +512,7 @@ class _UploadSongPageState extends State<UploadSongPage> {
                               clipBehavior: Clip.antiAlias,
                               child: SongDisplay(
                                 name: name ?? '',
+                                ownerName: identityTokenObject!.displayName!,
                                 description: description ?? '',
                                 image: image,
                                 colors: colors,

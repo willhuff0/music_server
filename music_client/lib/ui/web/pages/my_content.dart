@@ -62,6 +62,13 @@ class _MyContentPageState extends State<MyContentPage> {
                         children: [
                           Text('My Content', style: Theme.of(context).textTheme.titleLarge),
                           Expanded(child: Container()),
+                          IconButton(
+                            onPressed: () {
+                              _pagingController.refresh();
+                            },
+                            icon: const Icon(Icons.refresh_rounded),
+                          ),
+                          const SizedBox(width: 24.0),
                           FloatingActionButton.extended(
                             onPressed: () async {
                               final result = await showDialog<bool>(
@@ -104,7 +111,7 @@ class _MyContentPageState extends State<MyContentPage> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(14.0),
-                                      image: DecorationImage(image: NetworkImage(getSongImageUrl(item.id, ImageSize.small))),
+                                      image: DecorationImage(image: NetworkImage(getSongImageUrl(item.id, ImageSize.medium))),
                                     ),
                                   ),
                                 ),

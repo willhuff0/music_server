@@ -18,6 +18,8 @@ dependencies:
   dart_phonetics: ^1.0.1
   music_shared:
     path: ../music_shared
+  web_socket_channel: ^2.4.1
+  shelf_web_socket: ^1.0.4
 
 dev_dependencies:
   build_runner: ^2.4.7

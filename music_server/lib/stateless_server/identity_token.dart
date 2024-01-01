@@ -44,6 +44,7 @@ class IdentityTokenAuthority<TClaims extends IdentityTokenClaims> {
 
       IdentityToken<TClaims> token = IdentityToken<TClaims>._(
         userId: bodyMap['uid'] as String?,
+        displayName: bodyMap['name'] as String?,
         timestamp: timestamp,
         ipAddress: ip,
         userAgent: bodyMap['agent'] as String?,
@@ -62,6 +63,7 @@ class IdentityTokenAuthority<TClaims extends IdentityTokenClaims> {
 
     Map<String, dynamic> bodyMap = {
       if (token.userId != null) 'uid': token.userId,
+      if (token.displayName != null) 'name': token.displayName,
       'time': token.timestamp.toIso8601String(),
       if (token.ipAddress != null) 'ip': token.ipAddress!.address,
       if (token.userAgent != null) 'agent': token.userAgent,
@@ -80,6 +82,7 @@ class IdentityTokenAuthority<TClaims extends IdentityTokenClaims> {
 
 class IdentityToken<TClaims extends IdentityTokenClaims> {
   final String? userId;
+  final String? displayName;
   final DateTime timestamp;
   final InternetAddress? ipAddress;
   final String? userAgent;
@@ -87,13 +90,14 @@ class IdentityToken<TClaims extends IdentityTokenClaims> {
 
   IdentityToken._({
     required this.userId,
+    required this.displayName,
     required this.timestamp,
     required this.ipAddress,
     required this.userAgent,
     required this.claims,
   });
 
-  IdentityToken(this.userId, this.ipAddress, this.userAgent, this.claims) : timestamp = DateTime.now().toUtc();
+  IdentityToken(this.userId, this.displayName, this.ipAddress, this.userAgent, this.claims) : timestamp = DateTime.now().toUtc();
 }
 
 class IdentityTokenClaims {

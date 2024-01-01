@@ -22,29 +22,40 @@ const UserSchema = CollectionSchema(
       name: r'email',
       type: IsarType.string,
     ),
-    r'id': PropertySchema(
+    r'favors': PropertySchema(
       id: 1,
+      name: r'favors',
+      type: IsarType.objectList,
+      target: r'GenreFavor',
+    ),
+    r'id': PropertySchema(
+      id: 2,
       name: r'id',
       type: IsarType.string,
     ),
+    r'lastFavorCheck': PropertySchema(
+      id: 3,
+      name: r'lastFavorCheck',
+      type: IsarType.dateTime,
+    ),
     r'name': PropertySchema(
-      id: 2,
+      id: 4,
       name: r'name',
       type: IsarType.string,
     ),
     r'namePhonetics': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'namePhonetics',
       type: IsarType.stringList,
     ),
     r'password': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'password',
       type: IsarType.object,
       target: r'HashedUserPassword',
     ),
     r'tier': PropertySchema(
-      id: 5,
+      id: 7,
       name: r'tier',
       type: IsarType.byte,
       enumMap: _UsertierEnumValueMap,
@@ -97,7 +108,10 @@ const UserSchema = CollectionSchema(
     )
   },
   links: {},
-  embeddedSchemas: {r'HashedUserPassword': HashedUserPasswordSchema},
+  embeddedSchemas: {
+    r'HashedUserPassword': HashedUserPasswordSchema,
+    r'GenreFavor': GenreFavorSchema
+  },
   getId: _userGetId,
   getLinks: _userGetLinks,
   attach: _userAttach,
@@ -111,6 +125,14 @@ int _userEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.email.length * 3;
+  bytesCount += 3 + object.favors.length * 3;
+  {
+    final offsets = allOffsets[GenreFavor]!;
+    for (var i = 0; i < object.favors.length; i++) {
+      final value = object.favors[i];
+      bytesCount += GenreFavorSchema.estimateSize(value, offsets, allOffsets);
+    }
+  }
   bytesCount += 3 + object.id.length * 3;
   bytesCount += 3 + object.name.length * 3;
   bytesCount += 3 + object.namePhonetics.length * 3;
@@ -133,16 +155,23 @@ void _userSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.email);
-  writer.writeString(offsets[1], object.id);
-  writer.writeString(offsets[2], object.name);
-  writer.writeStringList(offsets[3], object.namePhonetics);
+  writer.writeObjectList<GenreFavor>(
+    offsets[1],
+    allOffsets,
+    GenreFavorSchema.serialize,
+    object.favors,
+  );
+  writer.writeString(offsets[2], object.id);
+  writer.writeDateTime(offsets[3], object.lastFavorCheck);
+  writer.writeString(offsets[4], object.name);
+  writer.writeStringList(offsets[5], object.namePhonetics);
   writer.writeObject<HashedUserPassword>(
-    offsets[4],
+    offsets[6],
     allOffsets,
     HashedUserPasswordSchema.serialize,
     object.password,
   );
-  writer.writeByte(offsets[5], object.tier.index);
+  writer.writeByte(offsets[7], object.tier.index);
 }
 
 User _userDeserialize(
@@ -153,17 +182,25 @@ User _userDeserialize(
 ) {
   final object = User(
     email: reader.readString(offsets[0]),
-    id: reader.readString(offsets[1]),
+    favors: reader.readObjectList<GenreFavor>(
+          offsets[1],
+          GenreFavorSchema.deserialize,
+          allOffsets,
+          GenreFavor(),
+        ) ??
+        [],
+    id: reader.readString(offsets[2]),
     isarId: id,
-    name: reader.readString(offsets[2]),
-    namePhonetics: reader.readStringList(offsets[3]) ?? [],
+    lastFavorCheck: reader.readDateTime(offsets[3]),
+    name: reader.readString(offsets[4]),
+    namePhonetics: reader.readStringList(offsets[5]) ?? [],
     password: reader.readObjectOrNull<HashedUserPassword>(
-          offsets[4],
+          offsets[6],
           HashedUserPasswordSchema.deserialize,
           allOffsets,
         ) ??
         HashedUserPassword(),
-    tier: _UsertierValueEnumMap[reader.readByteOrNull(offsets[5])] ??
+    tier: _UsertierValueEnumMap[reader.readByteOrNull(offsets[7])] ??
         UserTier.free,
   );
   return object;
@@ -179,19 +216,29 @@ P _userDeserializeProp<P>(
     case 0:
       return (reader.readString(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readObjectList<GenreFavor>(
+            offset,
+            GenreFavorSchema.deserialize,
+            allOffsets,
+            GenreFavor(),
+          ) ??
+          []) as P;
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
-      return (reader.readStringList(offset) ?? []) as P;
+      return (reader.readDateTime(offset)) as P;
     case 4:
+      return (reader.readString(offset)) as P;
+    case 5:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 6:
       return (reader.readObjectOrNull<HashedUserPassword>(
             offset,
             HashedUserPasswordSchema.deserialize,
             allOffsets,
           ) ??
           HashedUserPassword()) as P;
-    case 5:
+    case 7:
       return (_UsertierValueEnumMap[reader.readByteOrNull(offset)] ??
           UserTier.free) as P;
     default:
@@ -760,6 +807,90 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
+  QueryBuilder<User, User, QAfterFilterCondition> favorsLengthEqualTo(
+      int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'favors',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> favorsIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'favors',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> favorsIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'favors',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> favorsLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'favors',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> favorsLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'favors',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> favorsLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'favors',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
   QueryBuilder<User, User, QAfterFilterCondition> idEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -932,6 +1063,59 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'isarId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> lastFavorCheckEqualTo(
+      DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastFavorCheck',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> lastFavorCheckGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastFavorCheck',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> lastFavorCheckLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastFavorCheck',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> lastFavorCheckBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastFavorCheck',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -1341,6 +1525,13 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
 }
 
 extension UserQueryObject on QueryBuilder<User, User, QFilterCondition> {
+  QueryBuilder<User, User, QAfterFilterCondition> favorsElement(
+      FilterQuery<GenreFavor> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'favors');
+    });
+  }
+
   QueryBuilder<User, User, QAfterFilterCondition> password(
       FilterQuery<HashedUserPassword> q) {
     return QueryBuilder.apply(this, (query) {
@@ -1373,6 +1564,18 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
   QueryBuilder<User, User, QAfterSortBy> sortByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByLastFavorCheck() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastFavorCheck', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByLastFavorCheckDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastFavorCheck', Sort.desc);
     });
   }
 
@@ -1438,6 +1641,18 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
     });
   }
 
+  QueryBuilder<User, User, QAfterSortBy> thenByLastFavorCheck() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastFavorCheck', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> thenByLastFavorCheckDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastFavorCheck', Sort.desc);
+    });
+  }
+
   QueryBuilder<User, User, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -1478,6 +1693,12 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
     });
   }
 
+  QueryBuilder<User, User, QDistinct> distinctByLastFavorCheck() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastFavorCheck');
+    });
+  }
+
   QueryBuilder<User, User, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1511,9 +1732,21 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
     });
   }
 
+  QueryBuilder<User, List<GenreFavor>, QQueryOperations> favorsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'favors');
+    });
+  }
+
   QueryBuilder<User, String, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<User, DateTime, QQueryOperations> lastFavorCheckProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastFavorCheck');
     });
   }
 
@@ -1915,3 +2148,282 @@ extension HashedUserPasswordQueryFilter
 
 extension HashedUserPasswordQueryObject
     on QueryBuilder<HashedUserPassword, HashedUserPassword, QFilterCondition> {}
+
+// coverage:ignore-file
+// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
+
+const GenreFavorSchema = Schema(
+  name: r'GenreFavor',
+  id: -5397101336953831459,
+  properties: {
+    r'favor': PropertySchema(
+      id: 0,
+      name: r'favor',
+      type: IsarType.double,
+    ),
+    r'genre': PropertySchema(
+      id: 1,
+      name: r'genre',
+      type: IsarType.byte,
+      enumMap: _GenreFavorgenreEnumValueMap,
+    ),
+    r'hashCode': PropertySchema(
+      id: 2,
+      name: r'hashCode',
+      type: IsarType.long,
+    )
+  },
+  estimateSize: _genreFavorEstimateSize,
+  serialize: _genreFavorSerialize,
+  deserialize: _genreFavorDeserialize,
+  deserializeProp: _genreFavorDeserializeProp,
+);
+
+int _genreFavorEstimateSize(
+  GenreFavor object,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  var bytesCount = offsets.last;
+  return bytesCount;
+}
+
+void _genreFavorSerialize(
+  GenreFavor object,
+  IsarWriter writer,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  writer.writeDouble(offsets[0], object.favor);
+  writer.writeByte(offsets[1], object.genre.index);
+  writer.writeLong(offsets[2], object.hashCode);
+}
+
+GenreFavor _genreFavorDeserialize(
+  Id id,
+  IsarReader reader,
+  List<int> offsets,
+  Map<Type, List<int>> allOffsets,
+) {
+  final object = GenreFavor(
+    favor: reader.readDoubleOrNull(offsets[0]) ?? 1.0,
+    genre: _GenreFavorgenreValueEnumMap[reader.readByteOrNull(offsets[1])] ??
+        Genre.pop,
+  );
+  return object;
+}
+
+P _genreFavorDeserializeProp<P>(
+  IsarReader reader,
+  int propertyId,
+  int offset,
+  Map<Type, List<int>> allOffsets,
+) {
+  switch (propertyId) {
+    case 0:
+      return (reader.readDoubleOrNull(offset) ?? 1.0) as P;
+    case 1:
+      return (_GenreFavorgenreValueEnumMap[reader.readByteOrNull(offset)] ??
+          Genre.pop) as P;
+    case 2:
+      return (reader.readLong(offset)) as P;
+    default:
+      throw IsarError('Unknown property with id $propertyId');
+  }
+}
+
+const _GenreFavorgenreEnumValueMap = {
+  'hipHop': 0,
+  'pop': 1,
+  'folk': 2,
+  'experimental': 3,
+  'rock': 4,
+  'international': 5,
+  'electronic': 6,
+  'instrumental': 7,
+};
+const _GenreFavorgenreValueEnumMap = {
+  0: Genre.hipHop,
+  1: Genre.pop,
+  2: Genre.folk,
+  3: Genre.experimental,
+  4: Genre.rock,
+  5: Genre.international,
+  6: Genre.electronic,
+  7: Genre.instrumental,
+};
+
+extension GenreFavorQueryFilter
+    on QueryBuilder<GenreFavor, GenreFavor, QFilterCondition> {
+  QueryBuilder<GenreFavor, GenreFavor, QAfterFilterCondition> favorEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'favor',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<GenreFavor, GenreFavor, QAfterFilterCondition> favorGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'favor',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<GenreFavor, GenreFavor, QAfterFilterCondition> favorLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'favor',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<GenreFavor, GenreFavor, QAfterFilterCondition> favorBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'favor',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<GenreFavor, GenreFavor, QAfterFilterCondition> genreEqualTo(
+      Genre value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'genre',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<GenreFavor, GenreFavor, QAfterFilterCondition> genreGreaterThan(
+    Genre value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'genre',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<GenreFavor, GenreFavor, QAfterFilterCondition> genreLessThan(
+    Genre value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'genre',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<GenreFavor, GenreFavor, QAfterFilterCondition> genreBetween(
+    Genre lower,
+    Genre upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'genre',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<GenreFavor, GenreFavor, QAfterFilterCondition> hashCodeEqualTo(
+      int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'hashCode',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<GenreFavor, GenreFavor, QAfterFilterCondition>
+      hashCodeGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'hashCode',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<GenreFavor, GenreFavor, QAfterFilterCondition> hashCodeLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'hashCode',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<GenreFavor, GenreFavor, QAfterFilterCondition> hashCodeBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'hashCode',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+}
+
+extension GenreFavorQueryObject
+    on QueryBuilder<GenreFavor, GenreFavor, QFilterCondition> {}

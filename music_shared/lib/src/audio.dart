@@ -35,12 +35,16 @@ class AudioPreset {
 }
 
 enum Genre {
-  hipHop,
-  pop,
-  folk,
-  experimental,
-  rock,
-  international,
-  electronic,
-  instrumental,
+  hipHop(displayName: 'Hip Hop'),
+  pop(displayName: 'Pop'),
+  folk(displayName: 'Folk'),
+  experimental(displayName: 'Experimental'),
+  rock(displayName: 'Rock'),
+  international(displayName: 'International'),
+  electronic(displayName: 'Electronic'),
+  instrumental(displayName: 'Instrumental');
+
+  final String displayName;
+
+  const Genre({required this.displayName});
 }

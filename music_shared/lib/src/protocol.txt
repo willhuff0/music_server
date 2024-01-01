@@ -81,3 +81,8 @@ Song[] /song/filter (
     "start": int?,
     "limit": int? (<= 10),
 )
+
+Song[] /song/popular (
+    "token": IdentityToken,
+    "limit": int? (<= 6),
+)

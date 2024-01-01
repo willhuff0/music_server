@@ -8,13 +8,14 @@ import 'package:music_client/ui/widgets/ultra_gradient.dart';
 class SongDisplay extends StatefulWidget {
   final String? id;
   final String name;
+  final String ownerName;
   final String description;
   final ImageProvider? image;
   final List<Color>? colors;
   final Duration duration;
   final AudioPlayer audioPlayer;
 
-  const SongDisplay({super.key, this.id, required this.name, required this.description, required this.image, required this.colors, required this.duration, required this.audioPlayer});
+  const SongDisplay({super.key, this.id, required this.name, required this.ownerName, required this.description, required this.image, required this.colors, required this.duration, required this.audioPlayer});
 
   @override
   State<SongDisplay> createState() => _SongDisplayState();
@@ -22,7 +23,6 @@ class SongDisplay extends StatefulWidget {
 
 class _SongDisplayState extends State<SongDisplay> {
   late final StreamSubscription _playerStateSubscription;
-
   late final StreamSubscription _positionSubscription;
 
   var position = 0.0;
@@ -32,7 +32,6 @@ class _SongDisplayState extends State<SongDisplay> {
   @override
   void initState() {
     _playerStateSubscription = widget.audioPlayer.playerStateStream.listen((event) => setState(() => playing = event.playing));
-
     _positionSubscription = widget.audioPlayer.positionStream.listen((event) {
       if (!dragging) setState(() => position = clampDouble(event.inMilliseconds.toDouble() / widget.duration.inMilliseconds, 0.0, 1.0));
     });
@@ -42,131 +41,132 @@ class _SongDisplayState extends State<SongDisplay> {
   @override
   void dispose() {
     _playerStateSubscription.cancel();
-
     _positionSubscription.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedUltraGradient(
-      duration: const Duration(seconds: 10),
-      pointSize: 500.0,
-      colors: widget.colors,
-      child: Align(
-        alignment: const Alignment(0.0, 0.2),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AspectRatio(
-                aspectRatio: 1.0,
-                child: Hero(
-                  tag: '${widget.id}-image',
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(18.0),
-                      image: widget.image != null ? DecorationImage(image: widget.image!) : null,
-                      color: widget.image == null ? Colors.black : null,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 48.0),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: Text(widget.name, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-              ),
-              const SizedBox(height: 4.0),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: Text(
-                  widget.description,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.normal),
-                  textAlign: TextAlign.justify,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(height: 24.0),
-              SliderTheme(
-                data: const SliderThemeData(
-                  //thumbShape: RoundSliderThumbShape(enabledThumbRadius: 7.0),
-                  //overlayShape: RoundSliderOverlayShape(overlayRadius: 18.0),
-                  trackShape: CustomSliderTrackShape(),
-                  thumbShape: CustomSliderThumbShape(enabledThumbRadius: 7.0),
-                  overlayShape: CustomSliderOverlayShape(overlayRadius: 10.0),
-                ),
-                child: Slider(
-                    value: position,
-                    activeColor: Colors.white.withOpacity(0.7),
-                    inactiveColor: Colors.grey.shade900.withOpacity(0.7),
-                    thumbColor: Colors.white,
-                    onChanged: (value) => setState(() => position = value),
-                    onChangeStart: (value) => dragging = true,
-                    onChangeEnd: (value) {
-                      position = value;
-                      widget.audioPlayer.seek(Duration(milliseconds: (position * widget.duration.inMilliseconds).round()));
-                      dragging = false;
-                    }),
-              ),
-              Row(
-                children: [
-                  SizedBox(
-                    width: 40.0,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        durationToString(Duration(milliseconds: (position * widget.duration.inMilliseconds).round())),
-                        style: Theme.of(context).textTheme.labelSmall,
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      body: AnimatedUltraGradient(
+        duration: const Duration(seconds: 10),
+        pointSize: 500.0,
+        colors: widget.colors,
+        child: Align(
+          alignment: const Alignment(0.0, 0.2),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AspectRatio(
+                  aspectRatio: 1.0,
+                  child: Hero(
+                    transitionOnUserGestures: true,
+                    tag: 'song-art',
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18.0),
+                        image: widget.image != null ? DecorationImage(image: widget.image!) : null,
+                        color: widget.image == null ? Colors.black : null,
                       ),
                     ),
                   ),
-                  Expanded(child: Container()),
-                  SizedBox(
-                    width: 40.0,
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        durationToString(widget.duration),
-                        style: Theme.of(context).textTheme.labelSmall,
+                ),
+                const SizedBox(height: 48.0),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Text(widget.name, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+                ),
+                const SizedBox(height: 4.0),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Text(
+                    widget.ownerName,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.normal),
+                    textAlign: TextAlign.justify,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 24.0),
+                SliderTheme(
+                  data: const SliderThemeData(
+                    trackShape: CustomSliderTrackShape(),
+                    thumbShape: CustomSliderThumbShape(enabledThumbRadius: 7.0),
+                    overlayShape: CustomSliderOverlayShape(overlayRadius: 10.0),
+                  ),
+                  child: Slider(
+                      value: position,
+                      activeColor: Colors.white.withOpacity(0.7),
+                      inactiveColor: Colors.grey.shade900.withOpacity(0.7),
+                      thumbColor: Colors.white,
+                      onChanged: (value) => setState(() => position = value),
+                      onChangeStart: (value) => dragging = true,
+                      onChangeEnd: (value) {
+                        position = value;
+                        widget.audioPlayer.seek(Duration(milliseconds: (position * widget.duration.inMilliseconds).round()));
+                        dragging = false;
+                      }),
+                ),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 40.0,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          durationToString(Duration(milliseconds: (position * widget.duration.inMilliseconds).round())),
+                          style: Theme.of(context).textTheme.labelSmall,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 0.0),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed: () {},
-                    icon: Icon(Icons.skip_previous_rounded, color: Colors.white.withOpacity(0.7)),
-                    iconSize: 48.0,
-                  ),
-                  const SizedBox(width: 14.0),
-                  IconButton(
-                    onPressed: () {
-                      if (playing) {
-                        widget.audioPlayer.pause();
-                      } else {
-                        widget.audioPlayer.play();
-                      }
-                    },
-                    icon: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white.withOpacity(0.7)),
-                    iconSize: 68.0,
-                  ),
-                  const SizedBox(width: 14.0),
-                  IconButton(
-                    onPressed: () {},
-                    icon: Icon(Icons.skip_next_rounded, color: Colors.white.withOpacity(0.7)),
-                    iconSize: 48.0,
-                  ),
-                ],
-              ),
-            ],
+                    Expanded(child: Container()),
+                    SizedBox(
+                      width: 40.0,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          durationToString(widget.duration),
+                          style: Theme.of(context).textTheme.labelSmall,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 0.0),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: () {},
+                      icon: Icon(Icons.skip_previous_rounded, color: Colors.white.withOpacity(0.7)),
+                      iconSize: 48.0,
+                    ),
+                    const SizedBox(width: 14.0),
+                    IconButton(
+                      onPressed: () {
+                        if (playing) {
+                          widget.audioPlayer.pause();
+                        } else {
+                          widget.audioPlayer.play();
+                        }
+                      },
+                      icon: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white.withOpacity(0.7)),
+                      iconSize: 68.0,
+                    ),
+                    const SizedBox(width: 14.0),
+                    IconButton(
+                      onPressed: () {},
+                      icon: Icon(Icons.skip_next_rounded, color: Colors.white.withOpacity(0.7)),
+                      iconSize: 48.0,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

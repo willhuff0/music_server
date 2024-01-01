@@ -43,28 +43,38 @@ const SongSchema = CollectionSchema(
       name: r'id',
       type: IsarType.string,
     ),
-    r'name': PropertySchema(
+    r'lastPopularityCheck': PropertySchema(
       id: 5,
+      name: r'lastPopularityCheck',
+      type: IsarType.dateTime,
+    ),
+    r'name': PropertySchema(
+      id: 6,
       name: r'name',
       type: IsarType.string,
     ),
     r'namePhonetics': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'namePhonetics',
       type: IsarType.stringList,
     ),
     r'numPlays': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'numPlays',
       type: IsarType.long,
     ),
     r'owner': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'owner',
       type: IsarType.string,
     ),
+    r'popularity': PropertySchema(
+      id: 10,
+      name: r'popularity',
+      type: IsarType.double,
+    ),
     r'timestamp': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'timestamp',
       type: IsarType.dateTime,
     )
@@ -114,6 +124,19 @@ const SongSchema = CollectionSchema(
         )
       ],
     ),
+    r'popularity': IndexSchema(
+      id: -817613675826504681,
+      name: r'popularity',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'popularity',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
     r'namePhonetics': IndexSchema(
       id: -8167915883527909840,
       name: r'namePhonetics',
@@ -128,7 +151,14 @@ const SongSchema = CollectionSchema(
       ],
     )
   },
-  links: {},
+  links: {
+    r'ownerUser': LinkSchema(
+      id: -5287764460853307307,
+      name: r'ownerUser',
+      target: r'User',
+      single: true,
+    )
+  },
   embeddedSchemas: {},
   getId: _songGetId,
   getLinks: _songGetLinks,
@@ -168,11 +198,13 @@ void _songSerialize(
   writer.writeBool(offsets[2], object.explicit);
   writer.writeByteList(offsets[3], object.genres.map((e) => e.index).toList());
   writer.writeString(offsets[4], object.id);
-  writer.writeString(offsets[5], object.name);
-  writer.writeStringList(offsets[6], object.namePhonetics);
-  writer.writeLong(offsets[7], object.numPlays);
-  writer.writeString(offsets[8], object.owner);
-  writer.writeDateTime(offsets[9], object.timestamp);
+  writer.writeDateTime(offsets[5], object.lastPopularityCheck);
+  writer.writeString(offsets[6], object.name);
+  writer.writeStringList(offsets[7], object.namePhonetics);
+  writer.writeLong(offsets[8], object.numPlays);
+  writer.writeString(offsets[9], object.owner);
+  writer.writeDouble(offsets[10], object.popularity);
+  writer.writeDateTime(offsets[11], object.timestamp);
 }
 
 Song _songDeserialize(
@@ -192,11 +224,13 @@ Song _songDeserialize(
         [],
     id: reader.readString(offsets[4]),
     isarId: id,
-    name: reader.readString(offsets[5]),
-    namePhonetics: reader.readStringList(offsets[6]) ?? [],
-    numPlays: reader.readLongOrNull(offsets[7]) ?? 0,
-    owner: reader.readString(offsets[8]),
-    timestamp: reader.readDateTime(offsets[9]),
+    lastPopularityCheck: reader.readDateTime(offsets[5]),
+    name: reader.readString(offsets[6]),
+    namePhonetics: reader.readStringList(offsets[7]) ?? [],
+    numPlays: reader.readLong(offsets[8]),
+    owner: reader.readString(offsets[9]),
+    popularity: reader.readDouble(offsets[10]),
+    timestamp: reader.readDateTime(offsets[11]),
   );
   return object;
 }
@@ -223,14 +257,18 @@ P _songDeserializeProp<P>(
     case 4:
       return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 6:
-      return (reader.readStringList(offset) ?? []) as P;
-    case 7:
-      return (reader.readLongOrNull(offset) ?? 0) as P;
-    case 8:
       return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readStringList(offset) ?? []) as P;
+    case 8:
+      return (reader.readLong(offset)) as P;
     case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readDouble(offset)) as P;
+    case 11:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -263,11 +301,12 @@ Id _songGetId(Song object) {
 }
 
 List<IsarLinkBase<dynamic>> _songGetLinks(Song object) {
-  return [];
+  return [object.ownerUser];
 }
 
 void _songAttach(IsarCollection<dynamic> col, Id id, Song object) {
   object.isarId = id;
+  object.ownerUser.attach(col, col.isar.collection<User>(), r'ownerUser', id);
 }
 
 extension SongByIndex on IsarCollection<Song> {
@@ -335,6 +374,14 @@ extension SongQueryWhereSort on QueryBuilder<Song, Song, QWhere> {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'genres'),
+      );
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterWhere> anyPopularity() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'popularity'),
       );
     });
   }
@@ -585,6 +632,96 @@ extension SongQueryWhere on QueryBuilder<Song, Song, QWhereClause> {
         lower: [lowerGenresElement],
         includeLower: includeLower,
         upper: [upperGenresElement],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterWhereClause> popularityEqualTo(
+      double popularity) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'popularity',
+        value: [popularity],
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterWhereClause> popularityNotEqualTo(
+      double popularity) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'popularity',
+              lower: [],
+              upper: [popularity],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'popularity',
+              lower: [popularity],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'popularity',
+              lower: [popularity],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'popularity',
+              lower: [],
+              upper: [popularity],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterWhereClause> popularityGreaterThan(
+    double popularity, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'popularity',
+        lower: [popularity],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterWhereClause> popularityLessThan(
+    double popularity, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'popularity',
+        lower: [],
+        upper: [popularity],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterWhereClause> popularityBetween(
+    double lowerPopularity,
+    double upperPopularity, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'popularity',
+        lower: [lowerPopularity],
+        includeLower: includeLower,
+        upper: [upperPopularity],
         includeUpper: includeUpper,
       ));
     });
@@ -1236,6 +1373,60 @@ extension SongQueryFilter on QueryBuilder<Song, Song, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Song, Song, QAfterFilterCondition> lastPopularityCheckEqualTo(
+      DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastPopularityCheck',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition>
+      lastPopularityCheckGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastPopularityCheck',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> lastPopularityCheckLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastPopularityCheck',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> lastPopularityCheckBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastPopularityCheck',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<Song, Song, QAfterFilterCondition> nameEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1763,6 +1954,68 @@ extension SongQueryFilter on QueryBuilder<Song, Song, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Song, Song, QAfterFilterCondition> popularityEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'popularity',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> popularityGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'popularity',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> popularityLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'popularity',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> popularityBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'popularity',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
   QueryBuilder<Song, Song, QAfterFilterCondition> timestampEqualTo(
       DateTime value) {
     return QueryBuilder.apply(this, (query) {
@@ -1819,7 +2072,20 @@ extension SongQueryFilter on QueryBuilder<Song, Song, QFilterCondition> {
 
 extension SongQueryObject on QueryBuilder<Song, Song, QFilterCondition> {}
 
-extension SongQueryLinks on QueryBuilder<Song, Song, QFilterCondition> {}
+extension SongQueryLinks on QueryBuilder<Song, Song, QFilterCondition> {
+  QueryBuilder<Song, Song, QAfterFilterCondition> ownerUser(
+      FilterQuery<User> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.link(q, r'ownerUser');
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterFilterCondition> ownerUserIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.linkLength(r'ownerUser', 0, true, 0, true);
+    });
+  }
+}
 
 extension SongQuerySortBy on QueryBuilder<Song, Song, QSortBy> {
   QueryBuilder<Song, Song, QAfterSortBy> sortByDescription() {
@@ -1870,6 +2136,18 @@ extension SongQuerySortBy on QueryBuilder<Song, Song, QSortBy> {
     });
   }
 
+  QueryBuilder<Song, Song, QAfterSortBy> sortByLastPopularityCheck() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastPopularityCheck', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterSortBy> sortByLastPopularityCheckDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastPopularityCheck', Sort.desc);
+    });
+  }
+
   QueryBuilder<Song, Song, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -1903,6 +2181,18 @@ extension SongQuerySortBy on QueryBuilder<Song, Song, QSortBy> {
   QueryBuilder<Song, Song, QAfterSortBy> sortByOwnerDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'owner', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterSortBy> sortByPopularity() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'popularity', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterSortBy> sortByPopularityDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'popularity', Sort.desc);
     });
   }
 
@@ -1980,6 +2270,18 @@ extension SongQuerySortThenBy on QueryBuilder<Song, Song, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Song, Song, QAfterSortBy> thenByLastPopularityCheck() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastPopularityCheck', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterSortBy> thenByLastPopularityCheckDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastPopularityCheck', Sort.desc);
+    });
+  }
+
   QueryBuilder<Song, Song, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -2013,6 +2315,18 @@ extension SongQuerySortThenBy on QueryBuilder<Song, Song, QSortThenBy> {
   QueryBuilder<Song, Song, QAfterSortBy> thenByOwnerDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'owner', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterSortBy> thenByPopularity() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'popularity', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Song, Song, QAfterSortBy> thenByPopularityDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'popularity', Sort.desc);
     });
   }
 
@@ -2062,6 +2376,12 @@ extension SongQueryWhereDistinct on QueryBuilder<Song, Song, QDistinct> {
     });
   }
 
+  QueryBuilder<Song, Song, QDistinct> distinctByLastPopularityCheck() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastPopularityCheck');
+    });
+  }
+
   QueryBuilder<Song, Song, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2085,6 +2405,12 @@ extension SongQueryWhereDistinct on QueryBuilder<Song, Song, QDistinct> {
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'owner', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<Song, Song, QDistinct> distinctByPopularity() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'popularity');
     });
   }
 
@@ -2132,6 +2458,12 @@ extension SongQueryProperty on QueryBuilder<Song, Song, QQueryProperty> {
     });
   }
 
+  QueryBuilder<Song, DateTime, QQueryOperations> lastPopularityCheckProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastPopularityCheck');
+    });
+  }
+
   QueryBuilder<Song, String, QQueryOperations> nameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'name');
@@ -2153,6 +2485,12 @@ extension SongQueryProperty on QueryBuilder<Song, Song, QQueryProperty> {
   QueryBuilder<Song, String, QQueryOperations> ownerProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'owner');
+    });
+  }
+
+  QueryBuilder<Song, double, QQueryOperations> popularityProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'popularity');
     });
   }
 

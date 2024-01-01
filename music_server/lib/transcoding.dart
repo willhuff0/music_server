@@ -3,11 +3,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:cryptography/helpers.dart';
 import 'package:isar/isar.dart';
 import 'package:music_server/database/transcode_operation.dart';
 import 'package:music_server/database/unprocessed_song.dart';
+import 'package:music_server/database/user.dart';
 import 'package:music_server/music_server.dart';
 import 'package:music_shared/music_shared.dart';
 import 'package:path/path.dart' as p;
@@ -92,7 +94,7 @@ class TranscodeWorker implements Worker {
     });
   }
 
-  static Future<Worker> start(WorkerLaunchArgs args, Stream<dynamic> fromManagerStream, {String? debugName}) async {
+  static Future<Worker> start(WorkerLaunchArgs args, Stream<dynamic> fromManagerStream, SendPort toManagerPort, {String? debugName}) async {
     if (args is! AudioTranscodeWorkerLaunchArgs) throw Exception('TranscoderWorker must be started with AudioTranscodeWorkerLaunchArgs');
 
     final isar = openIsarDatabaseOnIsolate(args.paths);
@@ -191,7 +193,7 @@ class TranscodeWorker implements Worker {
       _isar.transcodeOperations.deleteSync(transcodeOperation.isarId);
       _isar.unprocessedSongs.deleteByIdSync(unprocessedSong.id);
 
-      _isar.songs.putByIdSync(Song.createFromUnprocessed(unprocessedSong));
+      _isar.songs.putByIdSync(Song.createFromUnprocessed(unprocessedSong, _isar.users.getByIdSync(unprocessedSong.owner)!));
     });
   }
 

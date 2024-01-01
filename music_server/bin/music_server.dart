@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:isar/isar.dart';
+import 'package:music_server/sync.dart';
 import 'package:music_server/transcoding.dart';
 import 'package:music_server/music_server.dart';
 import 'package:music_server/stateless_server/stateless_server.dart';
@@ -30,6 +31,7 @@ void main(List<String> arguments) async {
     mainIsolateIsar = openIsarDatabaseOnIsolate(paths, inspector: forceDebug || !const bool.fromEnvironment("dart.vm.product"));
 
     startDispatchingTranscodeWorkers(mainIsolateIsar, paths, config);
+    startDispatchingSyncSessionWorkers(mainIsolateIsar, paths, config);
 
     stdout.writeln('Listening on ${config.address.address}:${config.port}');
 
@@ -39,7 +41,10 @@ void main(List<String> arguments) async {
 
     await statelessServer?.shutdown();
     if (!await Future.any([
-      shutdownTranscodeWorkers().then((value) => true),
+      Future.wait([
+        shutdownTranscodeWorkers(),
+        shutdownSyncSessionWorkers(),
+      ]).then((value) => true),
       ProcessSignal.sigint.watch().first.then((value) => false),
     ])) {
       stdout.writeln('\nCancelling transcode operations, will attempt to resume on next start');

@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:music_client/client/client.dart';
@@ -8,9 +11,18 @@ import 'package:music_client/ui/mobile/pages/home.dart';
 import 'package:music_client/ui/mobile/pages/my_music.dart';
 import 'package:music_client/ui/mobile/pages/search.dart';
 import 'package:music_client/ui/mobile/pages/song.dart';
+import 'package:music_client/ui/widgets/song_image.dart';
+import 'package:music_client/ui/widgets/ultra_gradient.dart';
 import 'package:music_shared/music_shared.dart';
+import 'package:palette_generator/palette_generator.dart';
 
 late AudioPlayer appPlayer;
+Song? currentlyPlayingSong;
+ImageProvider? currentlyPlayingImageLarge;
+List<Color>? currentlyPlayingColors;
+
+final _playStateController = StreamController<Song>.broadcast();
+final playStateStream = _playStateController.stream;
 
 AudioPreset getAudioPresetForCurrentDevice() {
   final format = Platform.isIOS || Platform.isMacOS ? CompressedAudioFormat.aac : CompressedAudioFormat.opus;
@@ -24,10 +36,21 @@ AudioPreset getAudioPresetForCurrentDevice() {
   };
 }
 
-void selectSong(BuildContext context, Song song) {
-  Navigator.push(context, MaterialPageRoute(builder: (context) => SongPage(song: song)));
-  print(song.duration);
-  appPlayer.setAudioSource(MusicServerAudioSource(song: song, preset: getAudioPresetForCurrentDevice())).then((value) => print(value));
+Future<void> selectSong(Song song) async {
+  await preloadSong(song);
+  await appPlayer.play();
+}
+
+Future<void> preloadSong(Song song) async {
+  final image = NetworkImage(getSongImageUrl(song.id, ImageSize.large));
+  final results = await Future.wait([
+    PaletteGenerator.fromImageProvider(image).then((value) => (value.colors.toList()..shuffle()).take(4).toList()),
+    appPlayer.setAudioSource(MusicServerAudioSource(song: song, preset: getAudioPresetForCurrentDevice())),
+  ]);
+  currentlyPlayingSong = song;
+  currentlyPlayingImageLarge = image;
+  currentlyPlayingColors = results[0] as List<Color>?;
+  _playStateController.add(song);
 }
 
 class AppScaffold extends StatefulWidget {
@@ -38,17 +61,21 @@ class AppScaffold extends StatefulWidget {
 }
 
 class _AppScaffoldState extends State<AppScaffold> {
+  late final StreamSubscription playStateSubscription;
+
   var index = 0;
 
   @override
   void initState() {
     appPlayer = AudioPlayer();
+    playStateSubscription = playStateStream.listen((event) => setState(() {}));
     super.initState();
   }
 
   @override
   void dispose() {
     appPlayer.dispose();
+    playStateSubscription.cancel();
     super.dispose();
   }
 
@@ -56,37 +83,240 @@ class _AppScaffoldState extends State<AppScaffold> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(
-        index: index,
-        children: const [
-          HomePage(),
-          SearchPage(),
-          MyMusicPage(),
-        ],
+      body: AnimatedUltraGradient(
+        duration: const Duration(seconds: 10),
+        opacity: 0.1,
+        pointSize: 750.0,
+        child: IndexedStack(
+          index: index,
+          children: const [
+            HomePage(),
+            SearchPage(),
+            MyMusicPage(),
+          ],
+        ),
       ),
-      bottomNavigationBar: NavigationBar(
-        //elevation: 4.0,
-        backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.975),
-        selectedIndex: index,
-        onDestinationSelected: (value) => setState(() => index = value),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: currentlyPlayingSong != null
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 14.0),
+                    child: CurrentlyPlayingFloatingWidget(),
+                  )
+                : Container(),
           ),
-          NavigationDestination(
-            icon: Icon(Icons.search_outlined),
-            selectedIcon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.library_music_outlined),
-            selectedIcon: Icon(Icons.library_music_rounded),
-            label: 'My Music',
+          NavigationBar(
+            height: 60,
+            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.975),
+            selectedIndex: index,
+            onDestinationSelected: (value) => setState(() => index = value),
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home_rounded),
+                label: 'Home',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.search_outlined),
+                selectedIcon: Icon(Icons.search),
+                label: 'Search',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.library_music_outlined),
+                selectedIcon: Icon(Icons.library_music_rounded),
+                label: 'My Music',
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+}
+
+class CurrentlyPlayingFloatingWidget extends StatefulWidget {
+  const CurrentlyPlayingFloatingWidget({super.key});
+
+  @override
+  State<CurrentlyPlayingFloatingWidget> createState() => _CurrentlyPlayingFloatingWidgetState();
+}
+
+class _CurrentlyPlayingFloatingWidgetState extends State<CurrentlyPlayingFloatingWidget> {
+  late final StreamSubscription _playerStateSubscription;
+  late final StreamSubscription _positionSubscription;
+
+  var position = 0.0;
+  var playing = false;
+
+  @override
+  void initState() {
+    _playerStateSubscription = appPlayer.playerStateStream.listen((event) => setState(() => playing = event.playing));
+    _positionSubscription = appPlayer.positionStream.listen((event) => setState(() => position = clampDouble(event.inMilliseconds.toDouble() / currentlyPlayingSong!.duration.inMilliseconds, 0.0, 1.0)));
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _playerStateSubscription.cancel();
+    _positionSubscription.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return OpenContainer(
+      openElevation: 0.0,
+      closedElevation: 0.0,
+      closedColor: Colors.transparent,
+      openColor: Colors.transparent,
+      middleColor: Colors.transparent,
+      transitionDuration: const Duration(milliseconds: 400),
+      openBuilder: (context, closeContainer) {
+        return SongPage(
+          onClose: () => closeContainer(),
+        );
+      },
+      closedBuilder: (context, openContainer) {
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18.0),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            height: 60.0,
+            child: Stack(
+              children: [
+                ClipRect(
+                  clipper: ProgressClipper(progress: position, direction: AxisDirection.right),
+                  child: AnimatedUltraGradient(
+                    duration: const Duration(seconds: 10),
+                    pointSize: 200.0,
+                    colors: currentlyPlayingColors!.map((e) => e.withOpacity(0.1)).toList(),
+                    opacity: 0.5,
+                  ),
+                ),
+                ClipRect(
+                  clipper: ProgressClipper(progress: 1.0 - position, direction: AxisDirection.left),
+                  child: Container(color: Theme.of(context).colorScheme.surface.withOpacity(0.3)),
+                ),
+                Row(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: AspectRatio(
+                        aspectRatio: 1.0,
+                        child: Hero(
+                          transitionOnUserGestures: true,
+                          tag: 'song-art',
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(14.0),
+                              image: DecorationImage(image: currentlyPlayingImageLarge!),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 6.0, right: 18.0, top: 8.0, bottom: 8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(currentlyPlayingSong!.name, style: Theme.of(context).textTheme.titleMedium),
+                            const SizedBox(height: 2.0),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(left: 0.0),
+                                child: Text(
+                                  currentlyPlayingSong!.ownerName,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.8)),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        if (playing) {
+                          appPlayer.pause();
+                        } else {
+                          appPlayer.play();
+                        }
+                      },
+                      icon: SizedBox(
+                        width: 48.0,
+                        height: 48.0,
+                        child: Icon(
+                          playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                          color: Colors.white.withOpacity(0.6),
+                          size: 34.0,
+                        ),
+                      ),
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    const SizedBox(width: 12.0),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class ProgressClipper extends CustomClipper<Rect> {
+  final double progress;
+  final AxisDirection direction;
+
+  ProgressClipper({super.reclip, required this.progress, this.direction = AxisDirection.right});
+
+  @override
+  Rect getClip(Size size) {
+    double right;
+    double left;
+    double top;
+    double bottom;
+    switch (direction) {
+      case AxisDirection.right:
+        left = 0.0;
+        top = 0.0;
+        right = size.width * progress;
+        bottom = size.height;
+        break;
+      case AxisDirection.left:
+        left = size.width * (1.0 - progress);
+        top = 0.0;
+        right = size.width;
+        bottom = size.height;
+        break;
+      case AxisDirection.up:
+        left = 0.0;
+        top = size.height * (1.0 - progress);
+        right = size.width;
+        bottom = size.height;
+        break;
+      case AxisDirection.down:
+        left = 0.0;
+        top = 0.0;
+        right = size.width;
+        bottom = size.height * progress;
+        break;
+    }
+
+    return Rect.fromLTRB(left, top, right, bottom);
+  }
+
+  @override
+  bool shouldReclip(covariant ProgressClipper oldClipper) => progress != oldClipper.progress || direction != oldClipper.direction;
 }

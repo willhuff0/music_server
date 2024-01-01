@@ -47,11 +47,12 @@ final authStateChanged = _authStateChangedController.stream;
 
 class IdentityToken {
   final String? userId;
+  final String? displayName;
   final DateTime timestamp;
   final String? userAgent;
   final Map<String, dynamic> claims;
 
-  IdentityToken._({required this.userId, required this.timestamp, required this.userAgent, required this.claims});
+  IdentityToken._({required this.userId, required this.displayName, required this.timestamp, required this.userAgent, required this.claims});
 
   static IdentityToken? decode(String encodedToken) {
     List<String> encodedParts = encodedToken.split('.');
@@ -68,6 +69,7 @@ class IdentityToken {
 
     return IdentityToken._(
       userId: bodyMap['uid'] as String?,
+      displayName: bodyMap['name'] as String?,
       timestamp: timestamp,
       userAgent: bodyMap['agent'] as String?,
       claims: bodyMap['claims'] as Map<String, dynamic>? ?? {},

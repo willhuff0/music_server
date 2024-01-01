@@ -7,6 +7,7 @@ import 'package:isar/isar.dart';
 import 'package:music_server/database/song.dart';
 import 'package:music_server/database/transcode_operation.dart';
 import 'package:music_server/database/unprocessed_song.dart';
+import 'package:music_server/database/user.dart';
 import 'package:music_server/music_server.dart';
 import 'package:music_server/phonetics.dart';
 import 'package:music_server/stateless_server/stateless_server.dart';
@@ -75,7 +76,6 @@ FutureOr<Response> songCreateHandler(Request request, MusicServerThreadData thre
 
 FutureOr<Response> songUploadDataHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) async {
   final contentLength = request.contentLength;
-  print(contentLength);
   if (contentLength == null || contentLength > maxUploadChunkBytes) return Response.badRequest();
 
   final songId = request.headers['songId'];
@@ -279,14 +279,14 @@ FutureOr<Response> songSearchHandler(Request request, MusicServerThreadData thre
   final limitString = request.headers['limit'];
   if (limitString != null) {
     final limitInt = int.tryParse(limitString);
-    if (limitInt == null || limitInt < 0 || limitInt > 10) return Response.badRequest();
+    if (limitInt == null || limitInt < 1 || limitInt > 10) return Response.badRequest();
     limit = limitInt;
   } else {
     limit = 10;
   }
 
   final queryPhonetics = getPhoneticCodesOfQuery(queryString);
-  final searchResults = threadData.isar.songs.where().anyOf(queryPhonetics, (q, element) => q.namePhoneticsElementEqualTo(element)).offset(start).limit(limit).findAllSync();
+  final searchResults = threadData.isar.songs.where().anyOf(queryPhonetics, (q, element) => q.namePhoneticsElementEqualTo(element)).sortByPopularityDesc().offset(start).limit(limit).findAllSync();
 
   return Response.ok(jsonEncode(searchResults.map((song) => song.toJson()).toList()));
 }
@@ -323,7 +323,7 @@ FutureOr<Response> songFilterHandler(Request request, MusicServerThreadData thre
   final limitString = request.headers['limit'];
   if (limitString != null) {
     final limitInt = int.tryParse(limitString);
-    if (limitInt == null || limitInt < 0 || limitInt > 10) return Response.badRequest();
+    if (limitInt == null || limitInt < 1 || limitInt > 10) return Response.badRequest();
     limit = limitInt;
   } else {
     limit = 10;
@@ -331,15 +331,82 @@ FutureOr<Response> songFilterHandler(Request request, MusicServerThreadData thre
 
   List<Song> filterResult;
   if (ownerString == null) {
-    filterResult = threadData.isar.songs.where().anyOf(genres!, (q, element) => q.genresElementEqualTo(element)).sortByNameDesc().offset(start).limit(limit).findAllSync();
+    filterResult = threadData.isar.songs.where().anyOf(genres!, (q, element) => q.genresElementEqualTo(element)).sortByPopularityDesc().offset(start).limit(limit).findAllSync();
   } else {
     var query = threadData.isar.songs.where().ownerEqualTo(ownerString);
     if (genres != null) {
-      filterResult = query.filter().anyOf(genres, (q, element) => q.genresElementEqualTo(element)).sortByNameDesc().offset(start).limit(limit).findAllSync();
+      filterResult = query.filter().anyOf(genres, (q, element) => q.genresElementEqualTo(element)).sortByPopularityDesc().offset(start).limit(limit).findAllSync();
     } else {
-      filterResult = query.sortByNameDesc().offset(start).limit(limit).findAllSync();
+      filterResult = query.sortByPopularityDesc().offset(start).limit(limit).findAllSync();
     }
   }
 
   return Response.ok(jsonEncode(filterResult.map((song) => song.toJson()).toList()));
 }
+
+const decreaseUserFavorsEvery = Duration(days: 1);
+const minUserFavorsDecrease = 0.8;
+const maxUserFavorsDecrease = 0.3;
+const userFavorsDecreaseSteps = 7 - 1;
+
+const decreaseSongPopularityEvery = Duration(hours: 12);
+const minSongPopularityDecrease = 0.7;
+const maxSongPopularityDecrease = 0.2;
+const songPopularityDecreaseSteps = 4 - 1;
+
+FutureOr<Response> songPopularHandler(Request request, MusicServerThreadData threadData, IdentityToken identityToken) {
+  int limit;
+  final limitString = request.headers['limit'];
+  if (limitString != null) {
+    final limitInt = int.tryParse(limitString);
+    if (limitInt == null || limitInt < 1 || limitInt > 6) return Response.badRequest();
+    limit = limitInt;
+  } else {
+    limit = 6;
+  }
+
+  final userId = identityToken.userId;
+  if (userId == null) return Response.unauthorized('');
+  final user = threadData.isar.users.getByIdSync(userId);
+  if (user == null) return Response.unauthorized('');
+
+  final timestamp = DateTime.timestamp();
+
+  var userChanged = false;
+  final lastUserCheckDifference = timestamp.difference(user.lastFavorCheck).inMinutes;
+  if (lastUserCheckDifference > decreaseUserFavorsEvery.inMinutes) {
+    final steps = lastUserCheckDifference / decreaseUserFavorsEvery.inMinutes - 1;
+    final multiplier = lerpDouble(minUserFavorsDecrease, maxUserFavorsDecrease, clamp(steps / userFavorsDecreaseSteps, 0.0, 1.0));
+    for (var i = 0; i < user.favors.length; i++) {
+      user.favors[i].favor *= multiplier;
+    }
+    userChanged = true;
+  }
+
+  final topGenres = user.getTopGenres(4);
+  var results = threadData.isar.songs.where().anyOf(topGenres, (q, element) => q.genresElementEqualTo(element.genre)).sortByPopularityDesc().limit(limit).findAllSync();
+  if (results.length < limit) {
+    final extras = threadData.isar.songs.where().anyOf(results, (q, element) => q.isarIdNotEqualTo(element.isarId)).sortByPopularityDesc().limit(limit - results.length).findAllSync();
+    results = [...results, ...extras];
+  }
+
+  threadData.isar.writeTxnSync(() {
+    if (userChanged) threadData.isar.users.putSync(user);
+
+    for (final song in results) {
+      final lastSongPopularityCheckDifference = timestamp.difference(song.lastPopularityCheck).inMinutes;
+      if (lastSongPopularityCheckDifference > decreaseSongPopularityEvery.inMinutes) {
+        final steps = lastSongPopularityCheckDifference / decreaseSongPopularityEvery.inMinutes - 1;
+        final multiplier = lerpDouble(minSongPopularityDecrease, maxSongPopularityDecrease, clamp(steps / songPopularityDecreaseSteps, 0.0, 1.0));
+        song.popularity *= multiplier;
+      }
+      threadData.isar.songs.putSync(song);
+    }
+  });
+
+  return Response.ok(jsonEncode(results.map((e) => e.toJson()).toList()));
+}
+
+double lerpDouble(double a, double b, double t) => a * (1.0 - t) + b * t;
+
+double clamp(double x, double lower, double upper) => max(min(x, upper), lower);

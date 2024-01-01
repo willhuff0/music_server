@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:music_client/client/auth.dart' as auth;
 import 'package:music_client/ui/landing/landing_scaffold.dart';
 import 'package:music_shared/music_shared.dart';

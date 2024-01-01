@@ -3,11 +3,13 @@ import 'dart:typed_data';
 
 import 'package:isar/isar.dart';
 import 'package:music_server/database/song.dart';
+import 'package:music_server/database/sync_session.dart';
 import 'package:music_server/database/transcode_operation.dart';
 import 'package:music_server/database/unprocessed_song.dart';
 import 'package:music_server/database/user_activity.dart';
 import 'package:music_server/handlers/auth_handlers.dart';
 import 'package:music_server/handlers/song_handlers.dart';
+import 'package:music_server/handlers/sync_handlers.dart';
 import 'package:music_server/stateless_server/stateless_server.dart';
 import 'package:path/path.dart' as p;
 
@@ -15,11 +17,14 @@ import 'database/user.dart';
 
 const forceDebug = false;
 
-const rootPath = 'server_root';
+const _rootSubPath = 'server_root';
 
 class MusicServerConfig extends ServerConfig {
-  /// The number of workers spawned to serve requests
+  /// The number of workers spawned to transcode audio and images
   final int numTranscodeWorkers;
+
+  /// The number of workers spawned to serve sync sessions
+  final int numSyncSessionWorkers;
 
   MusicServerConfig({
     super.numWorkers,
@@ -28,6 +33,7 @@ class MusicServerConfig extends ServerConfig {
     super.tokenHashAlg,
     super.tokenKeyLength,
     this.numTranscodeWorkers = 2,
+    this.numSyncSessionWorkers = 2,
     super.tokenClaimsFromJson = MusicServerIdentityTokenClaims.fromJson,
   });
 }
@@ -73,6 +79,8 @@ class MusicServerIdentityTokenClaims extends IdentityTokenClaims {
 
   bool canSongCreate() => tier == UserTier.paid;
   bool canSongGetData() => tier == UserTier.paid;
+
+  bool canSyncSession() => tier == UserTier.paid;
 }
 
 class MusicServerPaths {
@@ -93,7 +101,7 @@ class MusicServerPaths {
       root = p.dirname(Platform.resolvedExecutable);
     }
 
-    root = p.join(root, rootPath);
+    root = p.join(root, _rootSubPath);
 
     rootPath = root;
     databasePath = p.join(rootPath, 'database');
@@ -127,6 +135,7 @@ Isar openIsarDatabaseOnIsolate(MusicServerPaths paths, {bool inspector = false})
         SongSchema,
         UnprocessedSongSchema,
         TranscodeOperationSchema,
+        SyncSessionSchema,
       ],
       directory: paths.databasePath,
       inspector: inspector,
@@ -151,6 +160,10 @@ final musicServerCustomHandlers = [
   CustomHandler(path: '/song/getImage/<songId>/<size>', handle: songGetImageHandler),
   CustomHandlerAuthRequired(path: '/song/search', handle: songSearchHandler),
   CustomHandlerAuthRequired(path: '/song/filter', handle: songFilterHandler),
+  CustomHandlerAuthRequired(path: '/song/popular', handle: songPopularHandler),
+
+  // Sync
+  CustomHandlerAuthRequired(path: '/sync/startOrJoinSession', handle: syncStartOrJoinSessionHandler),
 ];
 
 Response statusHandler(Request request, MusicServerThreadData threadData) {

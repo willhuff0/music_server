@@ -28,36 +28,27 @@ float falloff(float dist, float size) {
     //return smoothstep(size, 0.0, dist);
 }
 
+
 void main() {
     vec2 fragPosition = FlutterFragCoord().xy;
 
     vec4 totalColor = vec4(0.0);
-    // for(int i = 0; i < numPoints; i++) {
-    //     vec2 pointPosition = uPointPositions[i];
-    //     float pointSize = uPointSizes[i];
-    //     vec3 pointColor = uPointColors[i];
 
-    //     float dist = distance(pointPosition, fragPosition);
-    //     float intensity = falloff(dist, pointSize);
+    float dist = distance(uPointPositions0, fragPosition);
+    float intensity = falloff(dist, uPointSizes0);
+    totalColor += uPointColors0 * intensity;
 
-    //     totalColor += vec4(pointColor, 1.0) * intensity;
-    // }
+    dist = distance(uPointPositions1, fragPosition);
+    intensity = falloff(dist, uPointSizes1);
+    totalColor += uPointColors1 * intensity;
 
-        float dist = distance(uPointPositions0, fragPosition);
-        float intensity = falloff(dist, uPointSizes0);
-        totalColor += uPointColors0 * intensity;
+    dist = distance(uPointPositions2, fragPosition);
+    intensity = falloff(dist, uPointSizes2);
+    totalColor += uPointColors2 * intensity;
 
-        dist = distance(uPointPositions1, fragPosition);
-        intensity = falloff(dist, uPointSizes1);
-        totalColor += uPointColors1 * intensity;
-
-        dist = distance(uPointPositions2, fragPosition);
-        intensity = falloff(dist, uPointSizes2);
-        totalColor += uPointColors2 * intensity;
-
-        dist = distance(uPointPositions3, fragPosition);
-        intensity = falloff(dist, uPointSizes3);
-        totalColor += uPointColors3 * intensity;
+    dist = distance(uPointPositions3, fragPosition);
+    intensity = falloff(dist, uPointSizes3);
+    totalColor += uPointColors3 * intensity;
     
     fragColor = totalColor * outputIntensity;
 }

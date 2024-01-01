@@ -56,7 +56,7 @@ class WorkerIsolate {
     toManagerPort.send(fromManagerPort.sendPort);
     final fromManagerStream = fromManagerPort.asBroadcastStream();
 
-    final worker = await args.start(args, fromManagerStream, debugName: debugName);
+    final worker = await args.start(args, fromManagerStream, toManagerPort, debugName: debugName);
 
     return WorkerIsolate._(worker, fromManagerStream, toManagerPort);
   }
@@ -72,7 +72,7 @@ abstract interface class Worker {
 }
 
 class WorkerLaunchArgs {
-  Future<Worker> Function(WorkerLaunchArgs args, Stream<dynamic> fromManagerStream, {String? debugName}) start;
+  Future<Worker> Function(WorkerLaunchArgs args, Stream<dynamic> fromManagerStream, SendPort toManagerPort, {String? debugName}) start;
   final ServerConfig config;
 
   WorkerLaunchArgs({required this.start, required this.config});

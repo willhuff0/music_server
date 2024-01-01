@@ -12,6 +12,7 @@ class AnimatedUltraGradient extends StatefulWidget {
   final double pointSize;
   final List<Color>? colors;
   final Widget? child;
+  final bool expand;
 
   const AnimatedUltraGradient({
     super.key,
@@ -21,6 +22,7 @@ class AnimatedUltraGradient extends StatefulWidget {
     this.pointSize = 1000.0,
     this.colors,
     this.child,
+    this.expand = true,
   });
 
   @override
@@ -36,9 +38,6 @@ class _AnimatedUltraGradientState extends State<AnimatedUltraGradient> with Tick
 
   List<(double x, double y)>? pointPositionsA;
   List<(double x, double y)>? pointPositionsB;
-
-  late double maxHeight;
-  late double maxWidth;
 
   @override
   void didUpdateWidget(covariant AnimatedUltraGradient oldWidget) {
@@ -80,9 +79,9 @@ class _AnimatedUltraGradientState extends State<AnimatedUltraGradient> with Tick
 
   List<(double x, double y)> getNextPointPositions() => poissonDiskSample(
         count: 4,
-        radius: maxHeight / 4,
-        sizeX: maxWidth,
-        sizeY: maxHeight,
+        radius: 0.3,
+        sizeX: 1.0,
+        sizeY: 1.0,
       );
 
   void update() {
@@ -107,40 +106,37 @@ class _AnimatedUltraGradientState extends State<AnimatedUltraGradient> with Tick
 
   @override
   Widget build(BuildContext context) {
-    return shader != null
-        ? LayoutBuilder(
-            builder: (context, constraints) {
-              maxHeight = constraints.maxHeight;
-              maxWidth = constraints.maxWidth;
-              return SizedBox.expand(
-                child: AnimatedBuilder(
-                    animation: animationController,
-                    builder: (context, child) {
-                      if (pointPositionsA == null || pointPositionsB == null) {
-                        pointPositionsA = getNextPointPositions();
-                        pointPositionsB = getNextPointPositions();
-                      }
+    if (shader == null) {
+      return widget.child ?? Container();
+    }
 
-                      update();
+    final child = AnimatedBuilder(
+      animation: animationController,
+      builder: (context, child) {
+        if (pointPositionsA == null || pointPositionsB == null) {
+          pointPositionsA = getNextPointPositions();
+          pointPositionsB = getNextPointPositions();
+        }
 
-                      final pointPositions = lerpPositions(pointPositionsA!, pointPositionsB!, animationController.value);
+        update();
 
-                      return CustomPaint(
-                        painter: UltraGradientPainter(
-                          shader: shader!,
-                          numPoints: pointPositions.length,
-                          outputIntensity: widget.opacity,
-                          pointPositions: pointPositions,
-                          pointColors: pointColors!,
-                          pointSizes: pointSizes,
-                        ),
-                        child: widget.child,
-                      );
-                    }),
-              );
-            },
-          )
-        : widget.child ?? Container();
+        final pointPositions = lerpPositions(pointPositionsA!, pointPositionsB!, animationController.value);
+
+        return CustomPaint(
+          painter: UltraGradientPainter(
+            shader: shader!,
+            numPoints: pointPositions.length,
+            outputIntensity: widget.opacity,
+            pointPositions: pointPositions,
+            pointColors: pointColors!,
+            pointSizes: pointSizes,
+          ),
+          child: widget.child,
+        );
+      },
+    );
+
+    return widget.expand ? SizedBox.expand(child: child) : child;
   }
 }
 
@@ -171,8 +167,8 @@ class UltraGradientPainter extends CustomPainter {
 
     var i = 1;
     for (var k = 0; k < numPoints; k++) {
-      shader.setFloat(i, pointPositions[k].$1);
-      shader.setFloat(i + 1, pointPositions[k].$2);
+      shader.setFloat(i, pointPositions[k].$1 * size.width);
+      shader.setFloat(i + 1, pointPositions[k].$2 * size.height);
       i += 2;
     }
     for (var k = 0; k < numPoints; k++) {

@@ -97,13 +97,15 @@ class _SearchPageState extends State<SearchPage> {
                           padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 124.0),
                           itemBuilder: (context, index) {
                             final song = songs![index];
-                            return InkWell(
-                              splashFactory: InkRipple.splashFactory,
-                              onTap: () {
-                                selectSong(context, song);
-                              },
-                              child: Card(
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)),
+                            return Card(
+                              color: Theme.of(context).colorScheme.surface.withOpacity(0.975),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)),
+                              clipBehavior: Clip.antiAlias,
+                              child: InkWell(
+                                splashFactory: InkRipple.splashFactory,
+                                onTap: () {
+                                  selectSong(song);
+                                },
                                 child: SizedBox(
                                   height: 80.0,
                                   child: Row(
@@ -113,13 +115,10 @@ class _SearchPageState extends State<SearchPage> {
                                         padding: const EdgeInsets.all(4.0),
                                         child: AspectRatio(
                                           aspectRatio: 1.0,
-                                          child: Hero(
-                                            tag: '${song.id}-image',
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                borderRadius: BorderRadius.circular(14.0),
-                                                image: DecorationImage(image: NetworkImage(getSongImageUrl(song.id, ImageSize.thumb))),
-                                              ),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(14.0),
+                                              image: DecorationImage(image: NetworkImage(getSongImageUrl(song.id, ImageSize.thumb))),
                                             ),
                                           ),
                                         ),

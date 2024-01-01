@@ -7,6 +7,7 @@ import 'package:isar/isar.dart';
 import 'package:music_server/music_server.dart';
 import 'package:music_server/phonetics.dart';
 import 'package:music_server/stateless_server/stateless_server.dart';
+import 'package:music_shared/music_shared.dart';
 
 part 'user.g.dart';
 
@@ -31,6 +32,10 @@ class User {
   @enumerated
   final UserTier tier;
 
+  final Set<GenreFavor> _favors;
+  List<GenreFavor> get favors => _favors.toList();
+  final DateTime lastFavorCheck;
+
   User({
     this.isarId = Isar.autoIncrement,
     required this.id,
@@ -39,19 +44,24 @@ class User {
     required this.email,
     required this.password,
     required this.tier,
-  }) : _namePhonetics = namePhonetics.toSet();
+    required List<GenreFavor> favors,
+    required this.lastFavorCheck,
+  })  : _namePhonetics = namePhonetics.toSet(),
+        _favors = favors.toSet();
 
   User.create({required this.id, required this.name, required this.email, required this.password})
       : isarId = Isar.autoIncrement,
         _namePhonetics = getPhoneticCodesOfQuery(name),
-        tier = UserTier.paid;
+        tier = UserTier.paid,
+        _favors = {},
+        lastFavorCheck = DateTime.timestamp();
 
   MusicServerIdentityTokenClaims getIdentityTokenClaims() => MusicServerIdentityTokenClaims(
         tier: tier,
       );
 
   String startSession(IdentityTokenAuthority<MusicServerIdentityTokenClaims> identityTokenAuthority, InternetAddress? ipAddress, String? userAgent) {
-    final identityToken = IdentityToken(id, ipAddress, userAgent, getIdentityTokenClaims());
+    final identityToken = IdentityToken(id, name, ipAddress, userAgent, getIdentityTokenClaims());
     final encodedToken = identityTokenAuthority.signAndEncodeToken(identityToken);
     return encodedToken;
   }
@@ -60,6 +70,8 @@ class User {
         'id': id,
         'name': name,
       };
+
+  List<GenreFavor> getTopGenres(int count) => _favors.sorted((a, b) => b.favor.compareTo(a.favor)).take(count).toList();
 }
 
 // TODO: swap for native c library
@@ -126,4 +138,28 @@ bool memEquals(Uint8List bytes1, Uint8List bytes2) {
 enum UserTier {
   free,
   paid,
+}
+
+@embedded
+class GenreFavor {
+  @enumerated
+  final Genre genre;
+  double favor;
+
+  GenreFavor({this.genre = Genre.pop, this.favor = 1.0});
+
+  @override
+  bool operator ==(Object other) {
+    if (other is GenreFavor) {
+      return genre == other.genre;
+    }
+    return false;
+  }
+
+  int? _hashCode;
+  @override
+  int get hashCode {
+    _hashCode ??= genre.hashCode;
+    return _hashCode!;
+  }
 }
