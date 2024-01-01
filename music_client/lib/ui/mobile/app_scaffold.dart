@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:animations/animations.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:music_client/client/client.dart';
@@ -44,13 +45,18 @@ Future<void> selectSong(Song song) async {
 Future<void> preloadSong(Song song) async {
   final image = NetworkImage(getSongImageUrl(song.id, ImageSize.large));
   final results = await Future.wait([
-    PaletteGenerator.fromImageProvider(image).then((value) => (value.colors.toList()..shuffle()).take(4).toList()),
+    getColorsFromImage(image),
     appPlayer.setAudioSource(MusicServerAudioSource(song: song, preset: getAudioPresetForCurrentDevice())),
   ]);
   currentlyPlayingSong = song;
   currentlyPlayingImageLarge = image;
   currentlyPlayingColors = results[0] as List<Color>?;
   _playStateController.add(song);
+}
+
+Future<List<Color>> getColorsFromImage(ImageProvider image) async {
+  final palette = await PaletteGenerator.fromImageProvider(image);
+  return palette.colors.sorted((a, b) => a.computeLuminance().compareTo(b.computeLuminance())).take(4).toList();
 }
 
 class AppScaffold extends StatefulWidget {
@@ -87,6 +93,7 @@ class _AppScaffoldState extends State<AppScaffold> {
         duration: const Duration(seconds: 10),
         opacity: 0.1,
         pointSize: 750.0,
+        colors: currentlyPlayingColors,
         child: IndexedStack(
           index: index,
           children: const [
@@ -103,14 +110,15 @@ class _AppScaffoldState extends State<AppScaffold> {
             duration: const Duration(milliseconds: 300),
             child: currentlyPlayingSong != null
                 ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 14.0),
+                    padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
                     child: CurrentlyPlayingFloatingWidget(),
                   )
                 : Container(),
           ),
           NavigationBar(
             height: 60,
-            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.975),
+            elevation: 0.0,
+            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.8),
             selectedIndex: index,
             onDestinationSelected: (value) => setState(() => index = value),
             destinations: const [
@@ -193,8 +201,8 @@ class _CurrentlyPlayingFloatingWidgetState extends State<CurrentlyPlayingFloatin
                   clipper: ProgressClipper(progress: position, direction: AxisDirection.right),
                   child: AnimatedUltraGradient(
                     duration: const Duration(seconds: 10),
-                    pointSize: 200.0,
-                    colors: currentlyPlayingColors!.map((e) => e.withOpacity(0.1)).toList(),
+                    pointSize: 150.0,
+                    colors: currentlyPlayingColors!,
                     opacity: 0.5,
                   ),
                 ),

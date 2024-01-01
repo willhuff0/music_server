@@ -98,7 +98,8 @@ class _SearchPageState extends State<SearchPage> {
                           itemBuilder: (context, index) {
                             final song = songs![index];
                             return Card(
-                              color: Theme.of(context).colorScheme.surface.withOpacity(0.975),
+                              elevation: 0.0,
+                              color: Theme.of(context).colorScheme.surface.withOpacity(0.4),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18.0)),
                               clipBehavior: Clip.antiAlias,
                               child: InkWell(
@@ -109,7 +110,7 @@ class _SearchPageState extends State<SearchPage> {
                                 child: SizedBox(
                                   height: 80.0,
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
                                       Padding(
                                         padding: const EdgeInsets.all(4.0),
@@ -125,22 +126,16 @@ class _SearchPageState extends State<SearchPage> {
                                       ),
                                       Expanded(
                                         child: Padding(
-                                          padding: const EdgeInsets.only(left: 6.0, right: 18.0, top: 8.0, bottom: 8.0),
+                                          padding: const EdgeInsets.only(left: 8.0, right: 18.0, top: 8.0, bottom: 8.0),
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(song.name, style: Theme.of(context).textTheme.titleMedium),
                                               const SizedBox(height: 4.0),
-                                              Expanded(
-                                                child: Padding(
-                                                  padding: const EdgeInsets.only(left: 4.0),
-                                                  child: Text(
-                                                    song.description,
-                                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.8)),
-                                                    overflow: TextOverflow.ellipsis,
-                                                    maxLines: 2,
-                                                  ),
-                                                ),
+                                              Text(
+                                                song.ownerName,
+                                                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.8)),
                                               ),
                                             ],
                                           ),

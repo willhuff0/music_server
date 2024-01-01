@@ -27,7 +27,7 @@ class SongPage extends StatelessWidget {
           right: 0.0,
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.only(right: 24.0, top: 8.0),
               child: IconButton(
                 icon: const Icon(Icons.expand_more_rounded),
                 onPressed: () {
