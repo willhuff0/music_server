@@ -4,6 +4,12 @@ import 'dart:ui';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:music_client/theme.dart';
+import 'package:palette_generator/palette_generator.dart';
+
+Future<List<Color>> getColorsFromImage(ImageProvider image) async {
+  final palette = await PaletteGenerator.fromImageProvider(image);
+  return palette.colors.sorted((a, b) => a.computeLuminance().compareTo(b.computeLuminance())).take(4).toList();
+}
 
 class AnimatedUltraGradient extends StatefulWidget {
   final Duration duration;

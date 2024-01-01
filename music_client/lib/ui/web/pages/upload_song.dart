@@ -8,6 +8,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:music_client/client/auth.dart';
 import 'package:music_client/client/song.dart';
 import 'package:music_client/ui/widgets/song_display.dart';
+import 'package:music_client/ui/widgets/ultra_gradient.dart';
 import 'package:music_shared/music_shared.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:path/path.dart' as p;
@@ -99,10 +100,7 @@ class _UploadSongPageState extends State<UploadSongPage> {
     imageBytes = bytes;
     if (bytes != null) {
       setState(() => image = MemoryImage(bytes));
-      PaletteGenerator.fromImageProvider(image!).then((value) {
-        final paletteColors = value.colors.toList()..shuffle();
-        setState(() => colors = paletteColors.take(4).toList());
-      });
+      getColorsFromImage(image!).then((value) => colors = value);
     } else {
       setState(() {
         image = null;

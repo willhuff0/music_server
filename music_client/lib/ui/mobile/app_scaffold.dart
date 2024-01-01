@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:animations/animations.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:music_client/client/client.dart';
@@ -15,7 +14,6 @@ import 'package:music_client/ui/mobile/pages/song.dart';
 import 'package:music_client/ui/widgets/song_image.dart';
 import 'package:music_client/ui/widgets/ultra_gradient.dart';
 import 'package:music_shared/music_shared.dart';
-import 'package:palette_generator/palette_generator.dart';
 
 late AudioPlayer appPlayer;
 Song? currentlyPlayingSong;
@@ -52,11 +50,6 @@ Future<void> preloadSong(Song song) async {
   currentlyPlayingImageLarge = image;
   currentlyPlayingColors = results[0] as List<Color>?;
   _playStateController.add(song);
-}
-
-Future<List<Color>> getColorsFromImage(ImageProvider image) async {
-  final palette = await PaletteGenerator.fromImageProvider(image);
-  return palette.colors.sorted((a, b) => a.computeLuminance().compareTo(b.computeLuminance())).take(4).toList();
 }
 
 class AppScaffold extends StatefulWidget {
