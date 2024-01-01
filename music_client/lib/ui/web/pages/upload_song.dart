@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:desktop_drop/desktop_drop.dart';
@@ -24,6 +25,8 @@ class _UploadSongPageState extends State<UploadSongPage> {
   late final TextEditingController nameController;
   late final TextEditingController descriptionController;
 
+  late final StreamSubscription durationSubscription;
+
   late final AudioPlayer audioPlayer;
 
   late final GlobalKey formKey;
@@ -44,11 +47,17 @@ class _UploadSongPageState extends State<UploadSongPage> {
   Uint8List? imageBytes;
   String? imageFileName;
 
+  bool explicit = false;
+
   @override
   void initState() {
     nameController = TextEditingController();
     descriptionController = TextEditingController();
     audioPlayer = AudioPlayer();
+    durationSubscription = audioPlayer.durationStream.listen((newDuration) {
+      if (mounted) setState(() => duration = newDuration);
+      print(duration);
+    });
     formKey = GlobalKey();
     super.initState();
   }
@@ -59,8 +68,7 @@ class _UploadSongPageState extends State<UploadSongPage> {
       await audioPlayer.stop();
       audioBytes = bytes;
       try {
-        final newDuration = await audioPlayer.setAudioSource(BytesAudioSource(fileName!, audioBytes!));
-        if (mounted) setState(() => duration = newDuration);
+        await audioPlayer.setAudioSource(BytesAudioSource(fileName!, audioBytes!));
       } on PlayerException catch (e) {
         // iOS/macOS: maps to NSError.code
         // Android: maps to ExoPlayerException.type
@@ -130,6 +138,7 @@ class _UploadSongPageState extends State<UploadSongPage> {
         numParts: 1,
         name: name!,
         description: description!,
+        explicit: explicit,
         duration: duration!,
         genres: [Genre.pop], // Add genres dropdown
       );
@@ -169,6 +178,7 @@ class _UploadSongPageState extends State<UploadSongPage> {
     nameController.dispose();
     descriptionController.dispose();
     audioPlayer.stop().then((value) => audioPlayer.dispose());
+    durationSubscription.cancel();
     super.dispose();
   }
 
@@ -264,6 +274,23 @@ class _UploadSongPageState extends State<UploadSongPage> {
                                       ),
                                     ),
                                   ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 14.0),
+                            Center(
+                              child: SizedBox(
+                                width: 450.0,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Checkbox(value: explicit, onChanged: (value) => setState(() => explicit = value ?? false)),
+                                      SizedBox(width: 8.0),
+                                      Text('Explicit'),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),

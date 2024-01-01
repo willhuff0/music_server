@@ -43,6 +43,7 @@ class Song {
   final String owner;
   final DateTime timestamp;
   final Duration duration;
+  final bool explicit;
   final String name;
   final String description;
   final int numPlays;
@@ -52,6 +53,7 @@ class Song {
     required this.owner,
     required this.timestamp,
     required this.duration,
+    required this.explicit,
     required this.name,
     required this.description,
     required this.numPlays,
@@ -62,6 +64,7 @@ class Song {
         owner: json['owner'],
         timestamp: DateTime.fromMillisecondsSinceEpoch(json['timestamp']),
         duration: Duration(milliseconds: json['duration']),
+        explicit: json['explicit'],
         name: json['name'],
         description: json['description'],
         numPlays: json['numPlays'],
@@ -97,7 +100,7 @@ Future<List<Song>?> filterSongs({String? owner, List<Genre>? genres, int? start,
   return (jsonDecode(response.bodyString) as List).map((e) => Song.fromJson(e)).toList();
 }
 
-Future<String?> createSong({required String fileExtension, required int numParts, required String name, required String description, required Duration duration, required List<Genre> genres}) async {
+Future<String?> createSong({required String fileExtension, required int numParts, required String name, required String description, required bool explicit, required Duration duration, required List<Genre> genres}) async {
   if (!validateSongName(name)) return null;
   if (!validateSongDescription(description)) return null;
 
@@ -107,6 +110,7 @@ Future<String?> createSong({required String fileExtension, required int numParts
     'name': name,
     'description': description,
     'duration': duration.inMilliseconds,
+    'explicit': explicit,
     'genres': genres.map((e) => e.index).toList(),
   };
   final bodyJson = jsonEncode(bodyMap);
