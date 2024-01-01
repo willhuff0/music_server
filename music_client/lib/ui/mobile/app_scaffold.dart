@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:music_client/client/client.dart';
 import 'package:music_client/client/song.dart';
+import 'package:music_client/ui/mobile/sync.dart';
 import 'package:music_client/ui/mobile/pages/home.dart';
 import 'package:music_client/ui/mobile/pages/my_music.dart';
 import 'package:music_client/ui/mobile/pages/search.dart';
@@ -36,8 +37,12 @@ AudioPreset getAudioPresetForCurrentDevice() {
 }
 
 Future<void> selectSong(Song song) async {
-  await preloadSong(song);
-  await appPlayer.play();
+  if (syncSession != null) {
+    syncSession!.load(song);
+  } else {
+    await preloadSong(song);
+    await appPlayer.play();
+  }
 }
 
 Future<void> preloadSong(Song song) async {
@@ -50,6 +55,29 @@ Future<void> preloadSong(Song song) async {
   currentlyPlayingImageLarge = image;
   currentlyPlayingColors = results[0] as List<Color>?;
   _playStateController.add(song);
+
+  if (syncSession != null) {
+    await appPlayer.load();
+    appPlayer.play();
+    await appPlayer.pause();
+    await appPlayer.seek(Duration.zero);
+  }
+}
+
+void play() {
+  if (syncSession != null) {
+    syncSession!.play();
+  } else {
+    appPlayer.play();
+  }
+}
+
+void pause() {
+  if (syncSession != null) {
+    syncSession!.pause();
+  } else {
+    appPlayer.pause();
+  }
 }
 
 class AppScaffold extends StatefulWidget {
@@ -61,6 +89,7 @@ class AppScaffold extends StatefulWidget {
 
 class _AppScaffoldState extends State<AppScaffold> {
   late final StreamSubscription playStateSubscription;
+  late final StreamSubscription syncSessionChangedSubscription;
 
   var index = 0;
 
@@ -68,6 +97,7 @@ class _AppScaffoldState extends State<AppScaffold> {
   void initState() {
     appPlayer = AudioPlayer();
     playStateSubscription = playStateStream.listen((event) => setState(() {}));
+    syncSessionChangedSubscription = syncSessionChanged.listen((event) => setState(() {}));
     super.initState();
   }
 
@@ -75,6 +105,7 @@ class _AppScaffoldState extends State<AppScaffold> {
   void dispose() {
     appPlayer.dispose();
     playStateSubscription.cancel();
+    syncSessionChangedSubscription.cancel();
     super.dispose();
   }
 
@@ -99,6 +130,11 @@ class _AppScaffoldState extends State<AppScaffold> {
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (syncSession != null)
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Text('Connected to sync session. Latency: ${syncSession!.latencyMicroseconds / 1000} ms'),
+            ),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: currentlyPlayingSong != null
@@ -247,9 +283,9 @@ class _CurrentlyPlayingFloatingWidgetState extends State<CurrentlyPlayingFloatin
                     IconButton(
                       onPressed: () {
                         if (playing) {
-                          appPlayer.pause();
+                          pause();
                         } else {
-                          appPlayer.play();
+                          play();
                         }
                       },
                       icon: SizedBox(

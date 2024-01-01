@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:music_client/ui/mobile/app_scaffold.dart';
 import 'package:music_client/ui/widgets/ultra_gradient.dart';
 
 class SongDisplay extends StatefulWidget {
@@ -149,9 +150,9 @@ class _SongDisplayState extends State<SongDisplay> {
                     IconButton(
                       onPressed: () {
                         if (playing) {
-                          widget.audioPlayer.pause();
+                          pause();
                         } else {
-                          widget.audioPlayer.play();
+                          play();
                         }
                       },
                       icon: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white.withOpacity(0.7)),

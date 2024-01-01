@@ -83,6 +83,18 @@ class Song {
         description: json['description'],
         numPlays: json['numPlays'],
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'owner': owner,
+        'ownerName': ownerName,
+        'timestamp': timestamp.millisecondsSinceEpoch,
+        'duration': duration.inMilliseconds,
+        'explicit': explicit,
+        'name': name,
+        'description': description,
+        'numPlays': numPlays,
+      };
 }
 
 Future<List<Song>?> searchSongs(String query, {int? start, int? limit}) async {

@@ -189,7 +189,8 @@ class SyncSessionServer {
   }
 
   void _onRequest(WebSocketChannel client, dynamic request) {
-    print(request);
+    final timestamp = DateTime.timestamp();
+
     if (request is! String) {
       print('Malformed request: $request');
       return;
@@ -207,13 +208,17 @@ class SyncSessionServer {
       case 'time':
         client.sink.add(jsonEncode({
           'method': 'time',
-          'timestamp': DateTime.timestamp().microsecondsSinceEpoch,
+          'received': timestamp.microsecondsSinceEpoch,
+          'sent': DateTime.timestamp().microsecondsSinceEpoch,
         }));
         break;
       case 'call':
         final call = json['call'];
+        final params = json['params'];
         final response = jsonEncode({
+          'method': 'call',
           'call': call,
+          if (params != null) 'params': params,
         });
         for (final client in clients) {
           client.sink.add(response);
@@ -223,7 +228,8 @@ class SyncSessionServer {
         final call = json['call'];
         final effective = DateTime.timestamp().add(Duration(milliseconds: 1000)).microsecondsSinceEpoch;
         final response = jsonEncode({
-          'method': call,
+          'method': 'callTimeSensitive',
+          'call': call,
           'effective': effective,
         });
         for (final client in clients) {
