@@ -26,7 +26,7 @@ class SyncSession {
     });
 
     time();
-    _latencyCheckTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+    _latencyCheckTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
       time();
     });
   }
@@ -80,15 +80,15 @@ class SyncSession {
 
     if (_clientSendTimestamp == null) return;
 
-    final serverReceivedTimestamp = DateTime.fromMicrosecondsSinceEpoch(json['received']);
-    final serverSentTimestamp = DateTime.fromMicrosecondsSinceEpoch(json['sent']);
+    // final serverReceivedTimestamp = DateTime.fromMicrosecondsSinceEpoch(json['received']);
+    // final serverSentTimestamp = DateTime.fromMicrosecondsSinceEpoch(json['sent']);
 
     final roundTripDuration = clientTimestamp.difference(_clientSendTimestamp!);
 
-    final toServerDuration = serverReceivedTimestamp.difference(_clientSendTimestamp!);
-    final fromServerDuration = clientTimestamp.difference(serverSentTimestamp);
+    // final toServerDuration = serverReceivedTimestamp.difference(_clientSendTimestamp!);
+    // final fromServerDuration = clientTimestamp.difference(serverSentTimestamp);
 
-    final inServerDuration = serverSentTimestamp.difference(serverSentTimestamp);
+    // final inServerDuration = serverSentTimestamp.difference(serverSentTimestamp);
 
     // print('Round Trip: ${roundTripDuration.inMicroseconds / 1000} ms');
     // print('To Server: ${toServerDuration.inMicroseconds / 1000} ms');
@@ -107,6 +107,9 @@ class SyncSession {
         break;
       case 'pause':
         _pauseResponse(json['params']);
+        break;
+      case 'seek':
+        _seekResponse(json['params']);
         break;
     }
   }
@@ -132,7 +135,7 @@ class SyncSession {
     preloadSong(Song.fromJson(params));
   }
 
-  void play() {
+  void play() async {
     final message = jsonEncode({
       'method': 'callTimeSensitive',
       'call': 'play',
@@ -140,23 +143,41 @@ class SyncSession {
     channel.sink.add(message);
   }
 
-  void _playResponse(dynamic json) {
+  void _playResponse(dynamic json) async {
     final effective = DateTime.fromMicrosecondsSinceEpoch(json['effective']);
     final microsecondsUntilCall = effective.difference(DateTime.timestamp()).inMicroseconds - latencyMicroseconds;
+    _clientSendTimestamp = null;
     sleep(Duration(microseconds: microsecondsUntilCall));
-    appPlayer.play();
+    await appPlayer.play();
   }
 
-  void pause() {
+  void pause() async {
+    await appPlayer.pause();
     final message = jsonEncode({
       'method': 'call',
       'call': 'pause',
+      'params': appPlayer.position.inMicroseconds,
     });
     channel.sink.add(message);
   }
 
-  void _pauseResponse(dynamic params) {
-    appPlayer.pause();
+  void _pauseResponse(dynamic params) async {
+    await appPlayer.pause();
+    await appPlayer.seek(Duration(microseconds: params));
+  }
+
+  void seek(Duration position) {
+    final message = jsonEncode({
+      'method': 'call',
+      'call': 'seek',
+      'params': position.inMicroseconds,
+    });
+    channel.sink.add(message);
+  }
+
+  void _seekResponse(dynamic params) async {
+    await appPlayer.pause();
+    await appPlayer.seek(Duration(microseconds: params));
   }
 
   Future<void> disconnect() async {

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:music_client/ui/mobile/app_scaffold.dart';
 import 'package:music_client/ui/widgets/ultra_gradient.dart';
 
 class SongDisplay extends StatefulWidget {
@@ -15,8 +14,24 @@ class SongDisplay extends StatefulWidget {
   final List<Color>? colors;
   final Duration duration;
   final AudioPlayer audioPlayer;
+  final void Function()? onPlay;
+  final void Function()? onPause;
+  final void Function(Duration duration)? onSeek;
 
-  const SongDisplay({super.key, this.id, required this.name, required this.ownerName, required this.description, required this.image, required this.colors, required this.duration, required this.audioPlayer});
+  const SongDisplay({
+    super.key,
+    this.id,
+    required this.name,
+    required this.ownerName,
+    required this.description,
+    required this.image,
+    required this.colors,
+    required this.duration,
+    required this.audioPlayer,
+    this.onPlay,
+    this.onPause,
+    this.onSeek,
+  });
 
   @override
   State<SongDisplay> createState() => _SongDisplayState();
@@ -108,7 +123,11 @@ class _SongDisplayState extends State<SongDisplay> {
                       onChangeStart: (value) => dragging = true,
                       onChangeEnd: (value) {
                         position = value;
-                        widget.audioPlayer.seek(Duration(milliseconds: (position * widget.duration.inMilliseconds).round()));
+                        if (widget.onSeek != null) {
+                          widget.onSeek!(Duration(milliseconds: (position * widget.duration.inMilliseconds).round()));
+                        } else {
+                          widget.audioPlayer.seek(Duration(milliseconds: (position * widget.duration.inMilliseconds).round()));
+                        }
                         dragging = false;
                       }),
                 ),
@@ -150,9 +169,17 @@ class _SongDisplayState extends State<SongDisplay> {
                     IconButton(
                       onPressed: () {
                         if (playing) {
-                          pause();
+                          if (widget.onPause != null) {
+                            widget.onPause!();
+                          } else {
+                            widget.audioPlayer.pause();
+                          }
                         } else {
-                          play();
+                          if (widget.onPlay != null) {
+                            widget.onPlay!();
+                          } else {
+                            widget.audioPlayer.play();
+                          }
                         }
                       },
                       icon: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white.withOpacity(0.7)),

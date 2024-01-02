@@ -80,6 +80,21 @@ void pause() {
   }
 }
 
+void seek(Duration position) async {
+  if (syncSession != null) {
+    await appPlayer.pause();
+    await appPlayer.seek(position);
+
+    syncSession!.seek(position);
+
+    await Future.delayed(const Duration(milliseconds: 100)); // TODO: this should not be hard coded
+
+    syncSession!.play();
+  } else {
+    await appPlayer.seek(position);
+  }
+}
+
 class AppScaffold extends StatefulWidget {
   const AppScaffold({super.key});
 

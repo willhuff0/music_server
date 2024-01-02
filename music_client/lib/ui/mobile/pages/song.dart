@@ -21,6 +21,9 @@ class SongPage extends StatelessWidget {
           image: currentlyPlayingImageLarge!,
           colors: currentlyPlayingColors,
           audioPlayer: appPlayer,
+          onPlay: play,
+          onPause: pause,
+          onSeek: seek,
         ),
         Positioned(
           top: 0.0,
