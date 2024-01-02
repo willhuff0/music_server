@@ -80,16 +80,17 @@ void pause() {
   }
 }
 
-void seek(Duration position) async {
+void seek(Duration position, bool resumePlayAfterSeeking) async {
   if (syncSession != null) {
     await appPlayer.pause();
     await appPlayer.seek(position);
 
     syncSession!.seek(position);
 
-    await Future.delayed(const Duration(milliseconds: 100)); // TODO: this should not be hard coded
-
-    syncSession!.play();
+    if (resumePlayAfterSeeking) {
+      await Future.delayed(const Duration(milliseconds: 500)); // TODO: this should not be hard coded
+      syncSession!.play();
+    }
   } else {
     await appPlayer.seek(position);
   }
@@ -111,6 +112,13 @@ class _AppScaffoldState extends State<AppScaffold> {
   @override
   void initState() {
     appPlayer = AudioPlayer();
+    //   audioLoadConfiguration: const AudioLoadConfiguration(
+    //     darwinLoadControl: DarwinLoadControl(
+    //       automaticallyWaitsToMinimizeStalling: false,
+    //       canUseNetworkResourcesForLiveStreamingWhilePaused: true,
+    //     ),
+    //   ),
+    // );
     playStateSubscription = playStateStream.listen((event) => setState(() {}));
     syncSessionChangedSubscription = syncSessionChanged.listen((event) => setState(() {}));
     super.initState();
@@ -148,7 +156,7 @@ class _AppScaffoldState extends State<AppScaffold> {
           if (syncSession != null)
             Padding(
               padding: const EdgeInsets.all(24.0),
-              child: Text('Connected to sync session. Latency: ${syncSession!.latencyMicroseconds / 1000} ms'),
+              child: Text('Connected to sync session. Latency: ${syncSession!.latency / 1000} ms'),
             ),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),

@@ -16,7 +16,7 @@ class SongDisplay extends StatefulWidget {
   final AudioPlayer audioPlayer;
   final void Function()? onPlay;
   final void Function()? onPause;
-  final void Function(Duration duration)? onSeek;
+  final void Function(Duration duration, bool resumePlayAfterSeeking)? onSeek;
 
   const SongDisplay({
     super.key,
@@ -40,8 +40,10 @@ class SongDisplay extends StatefulWidget {
 class _SongDisplayState extends State<SongDisplay> {
   late final StreamSubscription _playerStateSubscription;
   late final StreamSubscription _positionSubscription;
+  late final StreamSubscription _bufferedPositionSubscription;
 
   var position = 0.0;
+  var bufferedPosition = 0.0;
   var dragging = false;
   var playing = false;
 
@@ -51,6 +53,9 @@ class _SongDisplayState extends State<SongDisplay> {
     _positionSubscription = widget.audioPlayer.positionStream.listen((event) {
       if (!dragging) setState(() => position = clampDouble(event.inMilliseconds.toDouble() / widget.duration.inMilliseconds, 0.0, 1.0));
     });
+    _bufferedPositionSubscription = widget.audioPlayer.bufferedPositionStream.listen((event) {
+      setState(() => bufferedPosition = clampDouble(event.inMilliseconds.toDouble() / widget.duration.inMilliseconds, 0.0, 1.0));
+    });
     super.initState();
   }
 
@@ -58,7 +63,40 @@ class _SongDisplayState extends State<SongDisplay> {
   void dispose() {
     _playerStateSubscription.cancel();
     _positionSubscription.cancel();
+    _bufferedPositionSubscription.cancel();
     super.dispose();
+  }
+
+  void pressPlayPauseButton() {
+    if (playing) {
+      if (widget.onPause != null) {
+        widget.onPause!();
+      } else {
+        widget.audioPlayer.pause();
+      }
+    } else {
+      if (widget.onPlay != null) {
+        widget.onPlay!();
+      } else {
+        widget.audioPlayer.play();
+      }
+    }
+  }
+
+  void pressSkipForwardButton() {}
+
+  void pressSkipBackwardButton() {
+    seek(0.0);
+  }
+
+  void seek(double value) {
+    position = value;
+    if (widget.onSeek != null) {
+      widget.onSeek!(Duration(milliseconds: (position * widget.duration.inMilliseconds).round()), playing);
+    } else {
+      widget.audioPlayer.seek(Duration(milliseconds: (position * widget.duration.inMilliseconds).round()));
+    }
+    dragging = false;
   }
 
   @override
@@ -115,21 +153,16 @@ class _SongDisplayState extends State<SongDisplay> {
                     overlayShape: CustomSliderOverlayShape(overlayRadius: 10.0),
                   ),
                   child: Slider(
-                      value: position,
-                      activeColor: Colors.white.withOpacity(0.7),
-                      inactiveColor: Colors.grey.shade900.withOpacity(0.7),
-                      thumbColor: Colors.white,
-                      onChanged: (value) => setState(() => position = value),
-                      onChangeStart: (value) => dragging = true,
-                      onChangeEnd: (value) {
-                        position = value;
-                        if (widget.onSeek != null) {
-                          widget.onSeek!(Duration(milliseconds: (position * widget.duration.inMilliseconds).round()));
-                        } else {
-                          widget.audioPlayer.seek(Duration(milliseconds: (position * widget.duration.inMilliseconds).round()));
-                        }
-                        dragging = false;
-                      }),
+                    value: position,
+                    activeColor: Colors.white.withOpacity(0.7),
+                    inactiveColor: Colors.grey.shade900.withOpacity(0.7),
+                    thumbColor: Colors.white,
+                    secondaryTrackValue: bufferedPosition,
+                    secondaryActiveColor: Colors.grey.shade700.withOpacity(0.2),
+                    onChanged: (value) => setState(() => position = value),
+                    onChangeStart: (value) => dragging = true,
+                    onChangeEnd: seek,
+                  ),
                 ),
                 Row(
                   children: [
@@ -161,33 +194,19 @@ class _SongDisplayState extends State<SongDisplay> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     IconButton(
-                      onPressed: () {},
+                      onPressed: pressSkipBackwardButton,
                       icon: Icon(Icons.skip_previous_rounded, color: Colors.white.withOpacity(0.7)),
                       iconSize: 48.0,
                     ),
                     const SizedBox(width: 14.0),
                     IconButton(
-                      onPressed: () {
-                        if (playing) {
-                          if (widget.onPause != null) {
-                            widget.onPause!();
-                          } else {
-                            widget.audioPlayer.pause();
-                          }
-                        } else {
-                          if (widget.onPlay != null) {
-                            widget.onPlay!();
-                          } else {
-                            widget.audioPlayer.play();
-                          }
-                        }
-                      },
+                      onPressed: pressPlayPauseButton,
                       icon: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.white.withOpacity(0.7)),
                       iconSize: 68.0,
                     ),
                     const SizedBox(width: 14.0),
                     IconButton(
-                      onPressed: () {},
+                      onPressed: pressSkipForwardButton,
                       icon: Icon(Icons.skip_next_rounded, color: Colors.white.withOpacity(0.7)),
                       iconSize: 48.0,
                     ),

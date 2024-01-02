@@ -18,7 +18,8 @@ class SyncSession {
   final WebSocketChannel channel;
 
   late Timer _latencyCheckTimer;
-  int latencyMicroseconds = 0;
+  int latency = 0;
+  int difference = 0;
 
   SyncSession._({required this.port, required this.channel}) {
     channel.stream.listen(_handle).onDone(() {
@@ -76,17 +77,17 @@ class SyncSession {
   }
 
   void _timeResponse(dynamic json) {
-    final clientTimestamp = DateTime.timestamp();
+    final clientReceiveTimestamp = DateTime.timestamp();
 
     if (_clientSendTimestamp == null) return;
 
-    // final serverReceivedTimestamp = DateTime.fromMicrosecondsSinceEpoch(json['received']);
-    // final serverSentTimestamp = DateTime.fromMicrosecondsSinceEpoch(json['sent']);
+    //final serverReceivedTimestamp = DateTime.fromMicrosecondsSinceEpoch(json['received']);
+    final serverSentTimestamp = DateTime.fromMicrosecondsSinceEpoch(json['sent']);
 
-    final roundTripDuration = clientTimestamp.difference(_clientSendTimestamp!);
+    final roundTripDuration = clientReceiveTimestamp.difference(_clientSendTimestamp!);
 
     // final toServerDuration = serverReceivedTimestamp.difference(_clientSendTimestamp!);
-    // final fromServerDuration = clientTimestamp.difference(serverSentTimestamp);
+    final fromServerDuration = clientReceiveTimestamp.difference(serverSentTimestamp);
 
     // final inServerDuration = serverSentTimestamp.difference(serverSentTimestamp);
 
@@ -95,8 +96,9 @@ class SyncSession {
     // print('From Server: ${fromServerDuration.inMicroseconds / 1000} ms');
     // print('In Server: ${inServerDuration.inMicroseconds / 1000} ms');
 
-    //latencyMicroseconds = (roundTripDuration.inMicroseconds / 2 + toServerDuration.inMicroseconds + fromServerDuration.inMicroseconds) ~/ 3;
-    latencyMicroseconds = roundTripDuration.inMicroseconds ~/ 2;
+    latency = roundTripDuration.inMicroseconds ~/ 2;
+    difference = fromServerDuration.inMicroseconds - latency; // TODO: account for dart execution duration
+
     syncSessionChangedController.add(syncSession);
   }
 
@@ -144,9 +146,9 @@ class SyncSession {
   }
 
   void _playResponse(dynamic json) async {
-    final effective = DateTime.fromMicrosecondsSinceEpoch(json['effective']);
-    final microsecondsUntilCall = effective.difference(DateTime.timestamp()).inMicroseconds - latencyMicroseconds;
     _clientSendTimestamp = null;
+    final effective = DateTime.fromMicrosecondsSinceEpoch(json['effective'] + difference);
+    final microsecondsUntilCall = effective.difference(DateTime.timestamp()).inMicroseconds;
     sleep(Duration(microseconds: microsecondsUntilCall));
     await appPlayer.play();
   }

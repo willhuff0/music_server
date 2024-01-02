@@ -118,9 +118,10 @@ class SyncSessionWorker implements Worker {
     _sessions[request.userId] = session;
   }
 
-  Future<void> _endSession(String userId) async {
+  void _endSession(String userId) {
     _router.remove('/$userId');
-    return await _sessions.remove(userId)?.endSession();
+    final server = _sessions.remove(userId);
+    print('[$_debugName] sync session ended (${server?.isarId}): $userId, ${server?.authorizedClients}');
   }
 
   @override
@@ -226,7 +227,7 @@ class SyncSessionServer {
         break;
       case 'callTimeSensitive':
         final call = json['call'];
-        final effective = DateTime.timestamp().add(Duration(milliseconds: 1000)).microsecondsSinceEpoch;
+        final effective = DateTime.timestamp().add(Duration(milliseconds: 100)).microsecondsSinceEpoch; // TODO: this should not be hard coded
         final response = jsonEncode({
           'method': 'callTimeSensitive',
           'call': call,
