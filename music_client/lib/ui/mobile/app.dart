@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:music_client/client/client.dart';
 import 'package:music_client/client/auth.dart' as auth;
 import 'package:music_client/ui/landing/landing_scaffold.dart';
@@ -21,7 +22,12 @@ class MyApp extends StatelessWidget {
       theme: lightTheme,
       darkTheme: darkTheme,
       themeMode: ThemeMode.dark,
-      home: const PreloadPage(),
+      home: Shortcuts(
+        shortcuts: <LogicalKeySet, Intent>{
+          LogicalKeySet(LogicalKeyboardKey.select): const ActivateIntent(),
+        },
+        child: const PreloadPage(),
+      ),
     );
   }
 }

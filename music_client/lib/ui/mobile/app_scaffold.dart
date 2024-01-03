@@ -134,6 +134,7 @@ class _AppScaffoldState extends State<AppScaffold> {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape = MediaQuery.sizeOf(context).aspectRatio > 1.0;
     return Scaffold(
       extendBody: true,
       body: AnimatedUltraGradient(
@@ -161,9 +162,11 @@ class _AppScaffoldState extends State<AppScaffold> {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 300),
             child: currentlyPlayingSong != null
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
-                    child: CurrentlyPlayingFloatingWidget(),
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+                    child: CurrentlyPlayingFloatingWidget(
+                      isLandscape: isLandscape,
+                    ),
                   )
                 : Container(),
           ),
@@ -198,7 +201,9 @@ class _AppScaffoldState extends State<AppScaffold> {
 }
 
 class CurrentlyPlayingFloatingWidget extends StatefulWidget {
-  const CurrentlyPlayingFloatingWidget({super.key});
+  final bool isLandscape;
+
+  const CurrentlyPlayingFloatingWidget({super.key, required this.isLandscape});
 
   @override
   State<CurrentlyPlayingFloatingWidget> createState() => _CurrentlyPlayingFloatingWidgetState();
@@ -303,6 +308,25 @@ class _CurrentlyPlayingFloatingWidgetState extends State<CurrentlyPlayingFloatin
                         ),
                       ),
                     ),
+                    if (widget.isLandscape) ...[
+                      IconButton(
+                        onPressed: () {
+                          openContainer();
+                        },
+                        icon: SizedBox(
+                          width: 48.0,
+                          height: 48.0,
+                          child: Icon(
+                            Icons.open_in_full_rounded,
+                            color: Colors.white.withOpacity(0.6),
+                            size: 24.0,
+                          ),
+                        ),
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      const SizedBox(width: 12.0),
+                    ],
                     IconButton(
                       onPressed: () {
                         if (playing) {

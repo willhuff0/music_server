@@ -1,6 +1,7 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:music_client/client/auth.dart';
 import 'package:music_client/client/song.dart';
 import 'package:music_client/ui/mobile/sync.dart';
 import 'package:music_client/ui/mobile/app_scaffold.dart';
@@ -15,12 +16,15 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  late StreamSubscription syncSessionChangedSubscription;
+
   List<Song>? songs;
 
   Set<Genre> selectedGenres = {};
 
   @override
   void initState() {
+    syncSessionChangedSubscription = syncSessionChanged.listen((_) => setState(() {}));
     popularSongs().then((value) {
       if (mounted) setState(() => songs = value);
     });
@@ -46,6 +50,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void dispose() {
+    syncSessionChangedSubscription.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
@@ -68,51 +78,82 @@ class _HomePageState extends State<HomePage> {
                 child: FittedBox(child: Text('Music Client', style: Theme.of(context).textTheme.headlineLarge)),
               ),
               Expanded(child: Container()),
+              // Padding(
+              //   padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 4.0),
+              //   child: MenuAnchor(
+              //     menuChildren: [
+              //       syncSession == null
+              //           ? MenuItemButton(
+              //               child: const Text('Join Sync Session'),
+              //               onPressed: () async {
+              //                 await startOrJoinSyncSession();
+              //               },
+              //             )
+              //           : MenuItemButton(
+              //               child: const Text('Leave Sync Session'),
+              //               onPressed: () async {
+              //                 await syncSession?.disconnect();
+              //                 syncSession = null;
+              //                 syncSessionChangedController.add(syncSession);
+              //               },
+              //             ),
+              //       const PopupMenuDivider(),
+              //       MenuItemButton(
+              //         child: const Text('Sign Out'),
+              //         onPressed: () {
+              //           signOut();
+              //         },
+              //       )
+              //     ],
+              //     builder: (context, controller, child) {
+              //       return IconButton(
+              //         onPressed: () {
+              //           controller.open();
+              //         },
+              //         icon: CircleAvatar(
+              //           backgroundColor: Theme.of(context).colorScheme.inversePrimary.withOpacity(0.5),
+              //           child: Text(
+              //             identityTokenObject!.displayName!.substring(0, 1).toUpperCase(),
+              //             style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              //                   color: Theme.of(context).colorScheme.onBackground.withOpacity(0.75),
+              //                 ),
+              //           ),
+              //         ),
+              //       );
+              //     },
+              //   ),
+              // ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 4.0),
-                child: MenuAnchor(
-                  menuChildren: [
-                    syncSession == null
-                        ? MenuItemButton(
-                            child: const Text('Join Sync Session'),
-                            onPressed: () async {
-                              await startOrJoinSyncSession();
-                            },
-                          )
-                        : MenuItemButton(
-                            child: const Text('Leave Sync Session'),
-                            onPressed: () async {
-                              await syncSession?.disconnect();
-                              syncSession = null;
-                              syncSessionChangedController.add(syncSession);
-                            },
-                          ),
-                    const PopupMenuDivider(),
-                    MenuItemButton(
-                      child: const Text('Sign Out'),
-                      onPressed: () {
-                        signOut();
-                      },
-                    )
-                  ],
-                  builder: (context, controller, child) {
-                    return IconButton(
-                      onPressed: () {
-                        controller.open();
-                      },
-                      icon: CircleAvatar(
-                        backgroundColor: Theme.of(context).colorScheme.inversePrimary.withOpacity(0.5),
-                        child: Text(
-                          identityTokenObject!.displayName!.substring(0, 1).toUpperCase(),
-                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                color: Theme.of(context).colorScheme.onBackground.withOpacity(0.75),
-                              ),
-                        ),
-                      ),
-                    );
+                padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 6.0),
+                child: IconButton(
+                  tooltip: syncSession == null ? 'Join Sync Session' : 'Leave Sync Session',
+                  onPressed: () async {
+                    if (syncSession == null) {
+                      await startOrJoinSyncSession();
+                    } else {
+                      await syncSession?.disconnect();
+                      syncSession = null;
+                      syncSessionChangedController.add(syncSession);
+                    }
                   },
+                  icon: Icon(syncSession == null ? Icons.lan_outlined : Icons.lan_rounded),
                 ),
               ),
+              // Padding(
+              //   padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 4.0),
+              //   child: IconButton(
+              //     onPressed: () {},
+              //     icon: CircleAvatar(
+              //       backgroundColor: Theme.of(context).colorScheme.inversePrimary.withOpacity(0.5),
+              //       child: Text(
+              //         identityTokenObject!.displayName!.substring(0, 1).toUpperCase(),
+              //         style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              //               color: Theme.of(context).colorScheme.onBackground.withOpacity(0.75),
+              //             ),
+              //       ),
+              //     ),
+              //   ),
+              // ),
             ],
           ),
         ),

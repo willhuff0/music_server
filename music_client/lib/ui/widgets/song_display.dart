@@ -115,16 +115,23 @@ class _SongDisplayState extends State<SongDisplay> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                AspectRatio(
-                  aspectRatio: 1.0,
-                  child: Hero(
-                    transitionOnUserGestures: true,
-                    tag: 'song-art',
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18.0),
-                        image: widget.image != null ? DecorationImage(image: widget.image!) : null,
-                        color: widget.image == null ? Colors.black : null,
+                Expanded(
+                  child: AspectRatio(
+                    aspectRatio: 1.0,
+                    child: Hero(
+                      transitionOnUserGestures: true,
+                      tag: 'song-art',
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18.0),
+                          image: widget.image != null
+                              ? DecorationImage(
+                                  image: widget.image!,
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                          color: widget.image == null ? Colors.black : null,
+                        ),
                       ),
                     ),
                   ),
@@ -146,22 +153,27 @@ class _SongDisplayState extends State<SongDisplay> {
                   ),
                 ),
                 const SizedBox(height: 24.0),
-                SliderTheme(
-                  data: const SliderThemeData(
-                    trackShape: CustomSliderTrackShape(),
-                    thumbShape: CustomSliderThumbShape(enabledThumbRadius: 7.0),
-                    overlayShape: CustomSliderOverlayShape(overlayRadius: 10.0),
+                MediaQuery(
+                  data: const MediaQueryData(
+                    navigationMode: NavigationMode.directional,
                   ),
-                  child: Slider(
-                    value: position,
-                    activeColor: Colors.white.withOpacity(0.7),
-                    inactiveColor: Colors.grey.shade900.withOpacity(0.7),
-                    thumbColor: Colors.white,
-                    secondaryTrackValue: bufferedPosition,
-                    secondaryActiveColor: Colors.grey.shade700.withOpacity(0.2),
-                    onChanged: (value) => setState(() => position = value),
-                    onChangeStart: (value) => dragging = true,
-                    onChangeEnd: seek,
+                  child: SliderTheme(
+                    data: const SliderThemeData(
+                      trackShape: CustomSliderTrackShape(),
+                      thumbShape: CustomSliderThumbShape(enabledThumbRadius: 7.0),
+                      overlayShape: CustomSliderOverlayShape(overlayRadius: 10.0),
+                    ),
+                    child: Slider(
+                      value: position,
+                      activeColor: Colors.white.withOpacity(0.7),
+                      inactiveColor: Colors.grey.shade900.withOpacity(0.7),
+                      thumbColor: Colors.white,
+                      secondaryTrackValue: bufferedPosition,
+                      secondaryActiveColor: Colors.grey.shade700.withOpacity(0.2),
+                      onChanged: (value) => setState(() => position = value),
+                      onChangeStart: (value) => dragging = true,
+                      onChangeEnd: seek,
+                    ),
                   ),
                 ),
                 Row(
