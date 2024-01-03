@@ -4,8 +4,9 @@ import 'package:music_client/ui/widgets/song_display.dart';
 
 class SongPage extends StatelessWidget {
   final void Function() onClose;
+  final bool isLandscape;
 
-  const SongPage({super.key, required this.onClose});
+  const SongPage({super.key, required this.onClose, required this.isLandscape});
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +25,7 @@ class SongPage extends StatelessWidget {
           onPlay: play,
           onPause: pause,
           onSeek: seek,
+          isLandscape: isLandscape,
         ),
         Positioned(
           top: 0.0,

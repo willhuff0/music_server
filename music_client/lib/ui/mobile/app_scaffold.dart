@@ -241,6 +241,7 @@ class _CurrentlyPlayingFloatingWidgetState extends State<CurrentlyPlayingFloatin
       transitionDuration: const Duration(milliseconds: 400),
       openBuilder: (context, closeContainer) {
         return SongPage(
+          isLandscape: widget.isLandscape,
           onClose: () => closeContainer(),
         );
       },
