@@ -227,7 +227,7 @@ class SyncSessionServer {
         break;
       case 'callTimeSensitive':
         final call = json['call'];
-        final effective = DateTime.timestamp().add(Duration(milliseconds: 100)).microsecondsSinceEpoch; // TODO: this should not be hard coded
+        final effective = DateTime.timestamp().add(Duration(milliseconds: 200)).microsecondsSinceEpoch;
         final response = jsonEncode({
           'method': 'callTimeSensitive',
           'call': call,

@@ -17,7 +17,7 @@ void main(List<String> arguments) async {
     final paths = MusicServerPaths.fromCurrentOS();
     final privateKey = generateSecureRandomKey(config.tokenKeyLength);
 
-    final workerLaunchArgs = CustomWorkerLaunchArgs(
+    final workerLaunchArgs = APIWorkerLaunchArgs(
       config: config,
       createThreadData: makeMusicServerCreateThreadData(paths, config, privateKey),
       customHandlers: musicServerCustomHandlers,

@@ -57,8 +57,6 @@ class MusicServerIdentityTokenClaims extends IdentityTokenClaims {
   });
 
   static MusicServerIdentityTokenClaims fromJson(Map<String, dynamic> json) {
-    //final tier = UserTier.values[json['tier'] as int? ?? 0];
-
     UserTier tier;
     final tierInt = json['tier'] as int?;
     if (tierInt != null) {

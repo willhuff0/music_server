@@ -4,22 +4,20 @@ import 'dart:isolate';
 
 import 'package:music_server/stateless_server/stateless_server.dart';
 
-// This needs to be rethought
-
-class CustomWorker implements Worker {
-  final CustomWorkerLaunchArgs _args;
+class APIWorker implements Worker {
+  final APIWorkerLaunchArgs _args;
   final HttpServer _server;
   final Router _router;
   final CustomThreadData _threadData;
 
-  CustomWorker._(this._server, this._router, this._threadData, this._args) {
+  APIWorker._(this._server, this._router, this._threadData, this._args) {
     for (final customHandler in _args.customHandlers) {
       addCustomHandler(customHandler);
     }
   }
 
   static Future<Worker> start(WorkerLaunchArgs args, Stream<dynamic> fromManagerStream, SendPort toManagerPort, {String? debugName}) async {
-    if (args is! CustomWorkerLaunchArgs) throw Exception('CustomWorker must be started with CustomWorkerLaunchArgs');
+    if (args is! APIWorkerLaunchArgs) throw Exception('APIWorker must be started with APIWorkerLaunchArgs');
 
     final threadData = await args.createThreadData();
 
@@ -27,7 +25,7 @@ class CustomWorker implements Worker {
     final handler = Pipeline().addMiddleware(logRequests(logger: debugName != null ? (message, isError) => print('[$debugName] $message') : null)).addHandler(router.call);
     final server = await serve(handler, args.config.address, args.config.port, shared: true);
 
-    return CustomWorker._(server, router, threadData, args);
+    return APIWorker._(server, router, threadData, args);
   }
 
   void addCustomHandler(CustomHandlerBase customHandler) => _router.all(customHandler.path, customHandler.createHandler(_threadData));
@@ -80,15 +78,15 @@ class CustomThreadDataWithAuth<TClaims extends IdentityTokenClaims> extends Cust
   CustomThreadDataWithAuth({required this.identityTokenAuthority});
 }
 
-class CustomWorkerLaunchArgs extends WorkerLaunchArgs {
+class APIWorkerLaunchArgs extends WorkerLaunchArgs {
   final FutureOr<CustomThreadData> Function() createThreadData;
   final List<CustomHandlerBase> customHandlers;
   final FutureOr<void> Function(CustomThreadData threadData) onClose;
 
-  CustomWorkerLaunchArgs({
+  APIWorkerLaunchArgs({
     required super.config,
     required this.createThreadData,
     required this.onClose,
     this.customHandlers = const [],
-  }) : super(start: CustomWorker.start);
+  }) : super(start: APIWorker.start);
 }

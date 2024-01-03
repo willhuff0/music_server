@@ -15,7 +15,6 @@ out vec4 fragColor;
 
 float falloff(float dist, float size) {
     return 1 - clamp(dist / size, 0.0, 1.0);
-    //return smoothstep(size, 0.0, dist);
 }
 
 void main() {
