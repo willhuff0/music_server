@@ -211,9 +211,6 @@ FutureOr<Response> songGetDataHandler(Request request, MusicServerThreadData thr
     quality = CompressedAudioQuality.values[qualityInt];
   }
 
-  // TODO: ***
-  quality = CompressedAudioQuality.high;
-
   final preset = AudioPreset(format: format, quality: quality);
 
   final audioFile = File(getSongAudioFilePath(threadData.paths, songId, preset));

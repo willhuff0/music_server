@@ -17,6 +17,7 @@ class SongDisplay extends StatefulWidget {
   final void Function()? onPlay;
   final void Function()? onPause;
   final void Function(Duration duration, bool resumePlayAfterSeeking)? onSeek;
+  final bool isLandscape;
 
   const SongDisplay({
     super.key,
@@ -31,6 +32,7 @@ class SongDisplay extends StatefulWidget {
     this.onPlay,
     this.onPause,
     this.onSeek,
+    this.isLandscape = false,
   });
 
   @override
@@ -101,6 +103,21 @@ class _SongDisplayState extends State<SongDisplay> {
 
   @override
   Widget build(BuildContext context) {
+    final art = AspectRatio(
+      aspectRatio: 1.0,
+      child: Hero(
+        transitionOnUserGestures: true,
+        tag: 'song-art',
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18.0),
+            image: widget.image != null ? DecorationImage(image: widget.image!) : null,
+            color: widget.image == null ? Colors.black : null,
+          ),
+        ),
+      ),
+    );
+
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       body: AnimatedUltraGradient(
@@ -115,27 +132,14 @@ class _SongDisplayState extends State<SongDisplay> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: AspectRatio(
-                    aspectRatio: 1.0,
-                    child: Hero(
-                      transitionOnUserGestures: true,
-                      tag: 'song-art',
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(18.0),
-                          image: widget.image != null
-                              ? DecorationImage(
-                                  image: widget.image!,
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
-                          color: widget.image == null ? Colors.black : null,
+                widget.isLandscape
+                    ? Expanded(
+                        child: Align(
+                          alignment: Alignment.topLeft,
+                          child: art,
                         ),
-                      ),
-                    ),
-                  ),
-                ),
+                      )
+                    : art,
                 const SizedBox(height: 48.0),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -145,7 +149,7 @@ class _SongDisplayState extends State<SongDisplay> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
                   child: Text(
-                    widget.ownerName,
+                    widget.description,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.normal),
                     textAlign: TextAlign.justify,
                     maxLines: 1,

@@ -18,7 +18,8 @@ void runSpeedTestOnConnectivityChanged() {
     if (connectivity == ConnectivityResult.none) {
       deviceSpeed = DeviceSpeed.disconnected;
     } else {
-      _runSpeedTest();
+      deviceSpeed = DeviceSpeed.veryFast;
+      //_runSpeedTest();
     }
   });
 }

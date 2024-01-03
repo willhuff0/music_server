@@ -180,6 +180,9 @@ class SyncSession {
   void _seekResponse(dynamic params) async {
     await appPlayer.pause();
     await appPlayer.seek(Duration(microseconds: params));
+    await appPlayer.play();
+    await appPlayer.pause();
+    await appPlayer.seek(Duration(microseconds: params));
   }
 
   Future<void> disconnect() async {

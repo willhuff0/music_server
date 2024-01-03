@@ -88,7 +88,7 @@ void seek(Duration position, bool resumePlayAfterSeeking) async {
     syncSession!.seek(position);
 
     if (resumePlayAfterSeeking) {
-      await Future.delayed(const Duration(milliseconds: 500)); // TODO: this should not be hard coded
+      await Future.delayed(const Duration(milliseconds: 1000)); // TODO: this should not be hard coded
       syncSession!.play();
     }
   } else {
