@@ -81,23 +81,13 @@ class SyncSession {
 
     if (_clientSendTimestamp == null) return;
 
-    //final serverReceivedTimestamp = DateTime.fromMicrosecondsSinceEpoch(json['received']);
     final serverSentTimestamp = DateTime.fromMicrosecondsSinceEpoch(json['sent']);
 
     final roundTripDuration = clientReceiveTimestamp.difference(_clientSendTimestamp!);
-
-    // final toServerDuration = serverReceivedTimestamp.difference(_clientSendTimestamp!);
     final fromServerDuration = clientReceiveTimestamp.difference(serverSentTimestamp);
 
-    // final inServerDuration = serverSentTimestamp.difference(serverSentTimestamp);
-
-    // print('Round Trip: ${roundTripDuration.inMicroseconds / 1000} ms');
-    // print('To Server: ${toServerDuration.inMicroseconds / 1000} ms');
-    // print('From Server: ${fromServerDuration.inMicroseconds / 1000} ms');
-    // print('In Server: ${inServerDuration.inMicroseconds / 1000} ms');
-
     latency = roundTripDuration.inMicroseconds ~/ 2;
-    difference = fromServerDuration.inMicroseconds - latency; // TODO: account for dart execution duration
+    difference = fromServerDuration.inMicroseconds - latency;
 
     syncSessionChangedController.add(syncSession);
   }

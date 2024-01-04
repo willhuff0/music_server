@@ -10,6 +10,7 @@ import 'package:music_client/client/auth.dart' as auth;
 import 'package:music_client/ui/landing/landing_scaffold.dart';
 import 'package:music_client/ui/mobile/app_scaffold.dart';
 import 'package:music_client/theme.dart';
+import 'package:music_client/ui/widgets/ultra_gradient.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -26,7 +27,13 @@ class MyApp extends StatelessWidget {
         shortcuts: <LogicalKeySet, Intent>{
           LogicalKeySet(LogicalKeyboardKey.select): const ActivateIntent(),
         },
-        child: const PreloadPage(),
+        child: const Scaffold(
+          backgroundColor: Colors.black,
+          body: AnimatedUltraGradient(
+            pointSize: 500.0,
+          ),
+        ),
+        //const PreloadPage(),
       ),
     );
   }
