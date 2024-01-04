@@ -1,15 +1,485 @@
 # Technical Documentation
 
+## GPU Clicker
+https://github.com/willhuff0/GPUClicker
+
+Made in Unity
+
+Summary of the concept: Clicking the GPU in the middle of the screen generates hashes. Once enough hashes are obtained, a block will be awarded, hashes reset, and the number of hashes required to get the next block increases. To overcome this, the player can prestige to a new cryptocurrency, after which the block difficulty resets and new upgrades are unlocked. Upgrades either generate hashes automatically, or increase the effectiveness of tapping.
+
+The app is available for iOS on TestFlight: https://testflight.apple.com/join/lw6eOvD1, and for Android through Google Play internal testing: https://play.google.com/apps/internaltest/4701185352615742940
+
+I use the singleton pattern often so static logic can be connected to the Unity scene.
+
+```c#
+private void _load()
+{
+    string json = PlayerPrefs.GetString("save");
+    
+    SaveData data;
+    if (string.IsNullOrEmpty(json))
+    {
+        data = new SaveData();
+    }
+    else
+    {
+        data = JsonConvert.DeserializeObject<SaveData>(json);
+    }
+    
+    PrestigeController.Singleton.Load(ref data);
+    HashController.Singleton.Load(ref data);
+    BlockController.Singleton.Load(ref data);
+    MiningPoolClaim.Singleton.Load(ref data);
+    CryptoController.Singleton.Load(ref data);
+    UpgradeController.Singleton.Load(ref data);
+    RigSpecialMenu.Singleton.OnLoad(ref data);
+    
+    UpgradeController.Singleton.ApplyBackgroundTicks(_getSecondsSinceLastSave());
+
+    _firstLoadComplete = true;
+}
+```
+
+Apply is called on each upgrade type's scriptable object during UpgradeController's load function.
+
+```c#
+public override void Apply(ulong count, ref ApplyResult result)
+{
+    result.HashesPerClick *= Utils.IntPow(hashesPerClickMultiplier, count);
+    result.HashesPerClick += hashesPerClickAddition * count;
+}
+```
+
+Utils.IntPow is a very simple optimization for calculating a power
+
+```c#
+public static double IntPow(double x, ulong pow)
+{
+    if (pow == 0) return 1;
+    if (pow == 1) return x;
+
+    double v = x;
+    for (ulong i = 1; i < pow; i++) v *= x;
+
+    return v;
+}
+```
+
+## Windows Automation and Kiosk App
+
+For my job at the Goodwill Computer Store.
+
+### Open source projects used
+
+- Flutter (https://github.com/flutter/flutter): UI toolkit
+- Chocolatey (https://github.com/chocolatey/choco): package manager for installing some default programs we include on the computers we sell
+
+This datastore class is used to store information such as device specs, benchmark scores, and intermediate information to allow resuming after restarts while installing driver updates.
+
+```dart
+abstract class DataStore {
+  static String getStorePath(String store) => p.join(p.dirname(Platform.resolvedExecutable), 'data_store', '$store.json');
+
+  final String store;
+
+  DataStore(this.store);
+
+  Map<String, dynamic> toMap();
+
+  void fromMap(Map<String, dynamic> map);
+
+  Future<void> save() async {
+    final file = File(getStorePath(store));
+    await file.create(recursive: true);
+
+    final content = const JsonEncoder.withIndent('    ').convert(toMap());
+    await file.writeAsString(content);
+  }
+
+  static Future<TDataStore?> read<TDataStore extends DataStore>(TDataStore Function() creator) async {
+    final dataStore = creator();
+
+    final file = File(getStorePath(dataStore.store));
+    if (!await file.exists()) return null;
+
+    final content = json.decode(await file.readAsString());
+    dataStore.fromMap(content);
+
+    return dataStore;
+  }
+}
+```
+
+Some of the UI is shown in my video.
+
+## Nebula
+
+A bare bones game and rendering engine. For rendering, this project uses Google ANGLE to translate OpenGLES to DirectX, Vulkan, or Metal calls. This improves performance compared to native OpenGL drivers. I also wrote a Node tree system with parenting to make nodes move together. Nodes can be extended to do things like render a mesh. The engine manages serialization of assets and has some built in asset types.
+
+### Open source projects used
+
+- ANGLE (https://github.com/google/angle): OpenGLES translation layer
+- assimp (https://github.com/assimp/assimp): adds support for importing many types of 3D models
+- ImageSharp (https://github.com/SixLabors/ImageSharp): decode and encode textures in compressed formats
+
+#### ANGLE
+
+Example of a native ANGLE call in Nebula.Graphics, GL.cs
+
+```c#
+using GLenum = UInt32;
+using GLsizeiptr = Int64;
+
+public const GLenum ARRAY_BUFFER = 0x8892;
+public const GLenum STATIC_DRAW = 0x88E4;
+```
+
+```c#
+[LibraryImport(glesDll, EntryPoint = "glBufferData" StringMarshalling = StringMarshalling.Utf8)]
+public static partial void BufferData(GLenum target, GLsizeiptr size, byte[] data, GLenum usage);
+```
+
+```c#
+GL.BufferData(GL.ARRAY_BUFFER, vertexData.LongLength, vertexData, GL.STATIC_DRAW);
+```
+
+bufferData in OpenGLES / ANGLE uploads data to the GPU, which contains a list of packed vertex data. Usually, position, texture coordinate, and normal direction information is placed side by side in the array. A call to vertexAttribPointer specifies the exact layout of this information so it can be used correctly in shaders.
+
+#### RenderShader
+
+This asset loads a vertex and fragment shader for use in material assets, which usually hold a reference to a common shader paired with different textures or parameters.
+
+```c#
+using System.Numerics;
+using System.Text.Json.Nodes;
+using Nebula.Graphics;
+
+namespace Nebula.Engine.Assets;
+
+[AssetDefinition("renderShaders")]
+public class RenderShader : FileAsset
+{
+    private string[] _imports;
+
+    public RenderShader(Project project, JsonNode json) : base(project, json)
+    {
+        _imports = json["imports"]?.GetValue<string[]>() ?? Array.Empty<string>();
+    }
+
+    public override JsonObject Serialize()
+    {
+        var json = base.Serialize();
+        json["imports"] = JsonValue.Create(_imports);
+        return json;
+    }
+
+    public override Task<RuntimeAsset?> Load()
+    {
+        var content = FileAssetGetText();
+        var lines = content.Split('\n');
+
+        string preamble = "", vertexSource = "", fragmentSource = "";
+        int stage = 0;
+        foreach (var line in lines)
+        {
+            if (line.StartsWith("#VERTEX"))
+            {
+                stage = 1;
+                continue;
+            }
+            if (line.StartsWith("#FRAGMENT"))
+            {
+                stage = 2;
+                continue;
+            }
+            
+            switch (stage)
+            {
+                case 0: 
+                    preamble += line + '\n';
+                    break;
+                case 1:
+                    vertexSource += line + '\n';
+                    break;
+                case 2:
+                    fragmentSource += line + '\n';
+                    break;
+            }
+        }
+
+        for (int i = _imports.Length - 1; i >= 0; i--)
+        {
+            var library = LibraryShader.FindById(_imports[i]);
+            if (library != null)
+            {
+                vertexSource = vertexSource.Insert(0, library.Content + '\n');
+                fragmentSource = fragmentSource.Insert(0, library.Content + '\n');
+            }
+        }
+
+        vertexSource = vertexSource.Insert(0, preamble + '\n');
+        fragmentSource = fragmentSource.Insert(0, preamble + '\n');
+        
+        var vertexShader = GL.CreateShader(GL.VERTEX_SHADER);
+        GL.ShaderSource(vertexShader, 1, new string[] { vertexSource }, null);
+        GL.CompileShader(vertexShader);
+        GL.GetShader(vertexShader, GL.COMPILE_STATUS, out int status);
+        if (status == GL.FALSE)
+        {
+            GL.GetShaderInfoLog(vertexShader, 1024, out int length, out string infoLog);
+            GL.DeleteShader(vertexShader);
+            Console.WriteLine($"Error compiling vertex shader ({Name}): {infoLog}");
+            return Task.FromResult<RuntimeAsset?>(null);
+        }
+        
+        var fragmentShader = GL.CreateShader(GL.FRAGMENT_SHADER);
+        GL.ShaderSource(fragmentShader, 1, new string[] { fragmentSource }, null);
+        GL.CompileShader(fragmentShader);
+        GL.GetShader(fragmentShader, GL.COMPILE_STATUS, out status);
+        if (status == GL.FALSE)
+        {
+            GL.GetShaderInfoLog(fragmentShader, 1024, out int length, out string infoLog);
+            GL.DeleteShader(fragmentShader);
+            Console.WriteLine($"Error compiling fragment shader ({Name}): {infoLog}");
+            return Task.FromResult<RuntimeAsset?>(null);
+        }
+
+        var program = GL.CreateProgram();
+        GL.AttachShader(program, vertexShader);
+        GL.AttachShader(program, fragmentShader);
+        GL.LinkProgram(program);
+        GL.DetachShader(program, vertexShader);
+        GL.DetachShader(program, fragmentShader);
+        GL.DeleteShader(vertexShader);
+        GL.DeleteShader(fragmentShader);
+        GL.GetProgram(program, GL.LINK_STATUS, out status);
+        if (status == GL.FALSE)
+        {
+            GL.GetProgramInfoLog(program, 1024, out int length, out string infoLog);
+            GL.DeleteProgram(program);
+            Console.WriteLine($"Error linking program ({Name}): {infoLog}");
+            return Task.FromResult<RuntimeAsset?>(null);
+        }
+
+        GL.GetProgram(program, GL.ACTIVE_UNIFORMS, out int uniformCount);
+        Dictionary<string, int> uniformLocations = new Dictionary<string, int>(uniformCount);
+        for (uint i = 0; i < uniformCount; i++)
+        {
+            GL.GetActiveUniform(program, i, 1024, out int length, out int size, out uint type, out string uniformName);
+            uniformLocations[uniformName] = GL.GetUniformLocation(program, uniformName);
+        }
+
+        return Task.FromResult<RuntimeAsset?>(new RuntimeRenderShader(Project, this, program, uniformLocations));
+    }
+}
+
+public class RuntimeRenderShader : RuntimeAsset
+{
+    private readonly uint _program;
+    private readonly Dictionary<string, int> _uniformLocations;
+
+    public RuntimeRenderShader(Project project, Asset from, uint program, Dictionary<string, int> uniformLocations) : base(project, from)
+    {
+        _program = program;
+        _uniformLocations = uniformLocations;
+    }
+    
+    public override Task Unload()
+    {
+        GL.DeleteProgram(_program);
+        
+        return Task.CompletedTask;
+    }
+
+    public void Bind() => GL.UseProgram(_program);
+    
+    public void SetUniform(string name, float value) => GL.ProgramUniform(_program, _uniformLocations[name], value);
+    public void SetUniform(string name, Vector2 value) => GL.ProgramUniform(_program, _uniformLocations[name], value.X, value.Y);
+    public void SetUniform(string name, Vector3 value) => GL.ProgramUniform(_program, _uniformLocations[name], value.X, value.Y, value.Z);
+    public void SetUniform(string name, Vector4 value) => GL.ProgramUniform(_program, _uniformLocations[name], value.X, value.Y, value.Z, value.W);
+    public void SetUniform(string name, int value) => GL.ProgramUniform(_program, _uniformLocations[name], value);
+    public void SetUniform(string name, int v0, int v1) => GL.ProgramUniform(_program, _uniformLocations[name], v0, v1);
+    public void SetUniform(string name, int v0, int v1, int v2) => GL.ProgramUniform(_program, _uniformLocations[name], v0, v1, v2);
+    public void SetUniform(string name, int v0, int v1, int v2, int v3) => GL.ProgramUniform(_program, _uniformLocations[name], v0, v1, v2, v3);
+    public void SetUniform(string name, bool value) => GL.ProgramUniform(_program, _uniformLocations[name], value ? 1 : 0);
+    public void SetUniform(string name, Matrix4x4 value) => GL.ProgramUniformMatrix4(_program, _uniformLocations[name], 1, false, new []{ value.M11, value.M21, value.M31, value.M41, value.M12, value.M22, value.M32, value.M42, value.M13, value.M23, value.M33, value.M43, value.M14, value.M24, value.M34, value.M44 });
+
+    public void SetUniform(string name, object value)
+    {
+        switch (value)
+        {
+            case int val: 
+                SetUniform(name, val);
+                break;
+            case bool val:
+                SetUniform(name, val);
+                break;
+            case float val:
+                SetUniform(name, val);
+                break;
+            case Vector2 val:
+                SetUniform(name, val);
+                break;
+            case Vector3 val:
+                SetUniform(name, val);
+                break;
+            case Vector4 val:
+                SetUniform(name, val);
+                break;
+            case int[] val:
+                switch (val.Length)
+                {
+                    case 1:
+                        SetUniform(name, val[0]);
+                        break;
+                    case 2:
+                        SetUniform(name, val[0], val[1]);
+                        break;
+                    case 3:
+                        SetUniform(name, val[0], val[1], val[2]);
+                        break;
+                    case 4:
+                        SetUniform(name, val[0], val[1], val[2], val[3]);
+                        break;
+                }
+                break;
+            case float[] val:
+                switch (val.Length)
+                {
+                    case 1:
+                        SetUniform(name, val[0]);
+                        break;
+                    case 2:
+                        SetUniform(name, new Vector2(val[0], val[1]));
+                        break;
+                    case 3:
+                        SetUniform(name, new Vector3(val[0], val[1], val[2]));
+                        break;
+                    case 4:
+                        SetUniform(name, new Vector4(val[0], val[1], val[2], val[3]));
+                        break;
+                    case 16:
+                        SetUniform(name, new Matrix4x4(val[0], val[1], val[2], val[3], val[4], val[5], val[6], val[7], val[8], val[9], val[10], val[11], val[12], val[13], val[14], val[15]));
+                        break;
+                }
+                break;
+        }
+    }
+}
+```
+
+#### Physically Based Rendering
+
+A fragment shader which uses PBR BRDF, with the rather common Smith GGX model for specular, Cook-Torrance for fresnel, and Lambert for diffuse.
+
+```glsl
+#version 310 es
+precision highp float;
+
+out vec4 FragColor;
+
+layout(location = 0) in vec2 v_texCoord;
+layout(location = 1) in vec3 v_worldPos;
+layout(location = 2) in vec3 v_normal;
+
+layout(binding = 0) uniform sampler2D nebula_texture_albedo;
+layout(binding = 1) uniform sampler2D nebula_texture_metallicRoughnessOcclusion;
+layout(binding = 2) uniform sampler2D nebula_texture_normal;
+
+layout(location = 2) uniform vec3 nebula_worldViewPos;
+
+layout(location = 3) uniform vec3 nebula_directionalLight_direction;
+layout(location = 4) uniform vec3 nebula_directionalLight_color;
+layout(location = 5) uniform float nebula_directionalLight_illuminance;
+
+const float PI = 3.14159265359;
+
+//------------------
+//  Specular
+
+// GGX NDF
+float specular_distribution(float NoH, float roughness) {
+    float a = NoH * roughness;
+    float k = roughness / (1.0 - NoH * NoH + a * a);
+    return k * k * (1.0 / PI);
+}
+
+// Smith GGX geometric shadowing
+float specular_visibility(float NoV, float NoL, float roughness) {
+    float a2 = roughness * roughness;
+    float GGXV = NoL * sqrt(NoV * NoV * (1.0 - a2) + a2);
+    float GGXL = NoV * sqrt(NoL * NoL * (1.0 - a2) + a2);
+    return 0.5 / (GGXV + GGXL);
+}
+
+// Schlick Cook-Torrance approximation fresnel
+vec3 specular_fresnel(float u, vec3 f0) {
+    float f = pow(1.0 - u, 5.0);
+    return f + f0 * (1.0 - f);
+}
+
+//------------------
+
+
+//------------------
+//  Diffuse
+
+// Lambert diffuse
+float diffuse_lambert() {
+    return 1.0 / PI;
+}
+
+//------------------
+
+void main() {
+    vec3 baseColor = texture(nebula_texture_albedo, v_texCoord).rgb;
+
+    vec3 inMetallicRoughnessOcclusion = texture(nebula_texture_metallicRoughnessOcclusion, v_texCoord).rgb;
+    float metallic = inMetallicRoughnessOcclusion.r;
+    float roughness = inMetallicRoughnessOcclusion.g * inMetallicRoughnessOcclusion.g;
+    float occlusion = inMetallicRoughnessOcclusion.b;
+
+    vec3 diffuseColor = (1.0 - metallic) * baseColor;
+    vec3 f0 = 0.16 * 1.0 * 1.0 * (1.0 - metallic) + baseColor * metallic;
+
+    vec3 n = v_normal;
+    vec3 v = normalize(v_worldPos - nebula_worldViewPos);
+    vec3 l = normalize(-nebula_directionalLight_direction);
+
+    vec3 h = normalize(v + l);
+
+    float NoV = abs(dot(n, v)) + 1e-5;
+    float NoL = clamp(dot(n, l), 0.0, 1.0);
+    float NoH = clamp(dot(n, h), 0.0, 1.0);
+    float LoH = clamp(dot(l, h), 0.0, 1.0);
+
+    float D = specular_distribution(NoH, roughness);
+    vec3 F = specular_fresnel(LoH, f0);
+    float V = specular_visibility(NoV, NoL, roughness);
+
+    vec3 specular = (D * V) * F;
+    vec3 diffuse = diffuseColor * diffuse_lambert();
+    vec3 brdf = diffuse + specular;
+
+    float illuminance = nebula_directionalLight_illuminance * NoL;
+    vec3 luminance = brdf * illuminance;
+
+    FragColor = vec4(luminance, 1.0);
+}
+```
+
 ## Music Service
+https://github.com/willhuff0/music_fullstack
 
 A full stack music streaming service built from scratch.
 
 I created this project mostly for fun. Later, I adapted it to solve a specific problem I was having. I wanted a way to synchronize speakers in my home.
 
-I designed:
+<!-- I built:
 - a worker system to manage threads
-- an http server using those workers
+- a multithreaded http server
 - a stateless session system
+- a web socket server to synchronize music -->
 
 ### Open source projects used
 
@@ -507,11 +977,12 @@ void _playResponse(dynamic json) async {
 ```
 
 
+
 ### Mobile and Web Clients
 
 #### Visuals
 
-This is the main logic of a gradient shader I use as a background nearly everywhere. All of the arrays contain 4 elements. Each fragment simply measures its distance to each of the points and adds that points color based on the distance.
+This is the main logic of a gradient shader I use as a background nearly everywhere. Each of the arrays, uPointPositions, uPointSizes, and uPointColors, contain 4 elements. Each fragment simply measures its distance to each of the points and adds that point's color multiplied by a distance based falloff.
 
 ```glsl
 float falloff(float dist, float size) {
@@ -578,6 +1049,4 @@ Then I take two samples and interpolate between them
 final pointPositions = lerpPositions(pointPositionsA!, pointPositionsB!, animationController.value);
 ```
 
-Result:
-
-<img src="gradient.png" height="300">
+An image of the gradient with some red and blue colors is labeled 'Music Service Gradient Background'. More demonstrations are in the video.
