@@ -85,7 +85,7 @@ class _EnterNameAndCreateUserPageState extends State<EnterNameAndCreateUserPage>
               child: FittedBox(
                 fit: BoxFit.fitWidth,
                 child: Text(
-                  'Who\'re\nYou?',
+                  'Who Are\nYou?',
                   style: Theme.of(context).textTheme.displayLarge?.copyWith(
                         fontSize: 84.0,
                         fontWeight: FontWeight.w800,
