@@ -3,15 +3,17 @@
 ## GPU Clicker
 https://github.com/willhuff0/GPUClicker
 
-Made in Unity
+Made in Unity.
 
-Summary of the concept: Clicking the GPU in the middle of the screen generates hashes. Once enough hashes are obtained, a block will be awarded, hashes reset, and the number of hashes required to get the next block increases. To overcome this, the player can prestige to a new cryptocurrency, after which the block difficulty resets and new upgrades are unlocked. Upgrades either generate hashes automatically, or increase the effectiveness of tapping.
+Summary of the concept: Tap to progress, accumulate different types of points with each click and unlock upgrades to reach higher levels. Clicking the GPU in the middle of the screen generates hashes. Once enough hashes are obtained, a block will be awarded, hashes reset, and the number of hashes required to get the next block increases. To overcome this, the player can prestige to a new cryptocurrency, after which the block difficulty resets and new upgrades are unlocked. Upgrades either generate hashes automatically, or increase the effectiveness of tapping.
 
 The app is available for iOS on TestFlight: https://testflight.apple.com/join/lw6eOvD1, and for Android through Google Play internal testing: https://play.google.com/apps/internaltest/4701185352615742940
 
+I used some interesting code to simulate the game running in the background when the app is closed.
+
 I use the singleton pattern often so static logic can be connected to the Unity scene.
 
-```c#
+```cs
 private void _load()
 {
     string json = PlayerPrefs.GetString("save");
@@ -42,7 +44,7 @@ private void _load()
 
 Apply is called on each upgrade type's scriptable object during UpgradeController's load function.
 
-```c#
+```cs
 public override void Apply(ulong count, ref ApplyResult result)
 {
     result.HashesPerClick *= Utils.IntPow(hashesPerClickMultiplier, count);
@@ -52,7 +54,7 @@ public override void Apply(ulong count, ref ApplyResult result)
 
 Utils.IntPow is a very simple optimization for calculating a power
 
-```c#
+```cs
 public static double IntPow(double x, ulong pow)
 {
     if (pow == 0) return 1;
@@ -126,7 +128,7 @@ A bare bones game and rendering engine. For rendering, this project uses Google 
 
 Example of a native ANGLE call in Nebula.Graphics, GL.cs
 
-```c#
+```cs
 using GLenum = UInt32;
 using GLsizeiptr = Int64;
 
@@ -134,12 +136,12 @@ public const GLenum ARRAY_BUFFER = 0x8892;
 public const GLenum STATIC_DRAW = 0x88E4;
 ```
 
-```c#
+```cs
 [LibraryImport(glesDll, EntryPoint = "glBufferData" StringMarshalling = StringMarshalling.Utf8)]
 public static partial void BufferData(GLenum target, GLsizeiptr size, byte[] data, GLenum usage);
 ```
 
-```c#
+```cs
 GL.BufferData(GL.ARRAY_BUFFER, vertexData.LongLength, vertexData, GL.STATIC_DRAW);
 ```
 
@@ -147,9 +149,9 @@ bufferData in OpenGLES / ANGLE uploads data to the GPU, which contains a list of
 
 #### RenderShader
 
-This asset loads a vertex and fragment shader for use in material assets, which usually hold a reference to a common shader paired with different textures or parameters.
+This asset loads a vertex and fragment shader for use in material assets, which usually holds a reference to a common shader paired with different textures or parameters.
 
-```c#
+```cs
 using System.Numerics;
 using System.Text.Json.Nodes;
 using Nebula.Graphics;
@@ -468,18 +470,44 @@ void main() {
 }
 ```
 
+## Calculator Snake
+
+I wrote a snake game on my TI-84 Plus CE when I was stuck in the exam room after finishing my AP Statistics midterm.
+
+The program lays out a grid of points using Pt-On and Pt-Off. One of which starts as a snake head (represented as a green point), and one as an apple (represented as a red point).
+
+The apple's position is any random point that doesn't contain a part of the snake.
+
+The snake head moves one space each tick. When colliding with the apple, the snake eats it and its body grows in size by one. A new apple is spawned randomly again.
+
+Since my calculator's smallest unit of time is integer seconds, I am unable to speed up the game over time, like in traditional snake games. The tick rate is fixed at 1 tick per second.
+
+If the snake manages to fill up every space, without colliding with its body or the walls, the player wins.
+
+The program uses lists to store the snake's body positions. L1 for X and L2 for Y.
+
+This snippet shows moving each snake body part forward by one if the snake has at least 2 body parts. By doing this each part of the snake will follow the exact path taken by the head as is traditional in snake.
+
+```basic
+If L>=2
+Then
+For(I,L,2,-1)
+L1(I-1)->L1(I)
+L2(I-1)->L2(I)
+End
+End
+```
+
+The program is based on a version of snake I wrote a bit earlier called 'file_explorer_snake' (https://github.com/willhuff0/file_explorer_snake). In this version a 10x10 grid of grey images are saved to a directory, the images are then swapped out for different colors creating the screen of the game. This version had a similar problem of being speed limited; Windows file explorer refreshes at a fixed rate, so each tick has to happen about every 2 seconds.
+
+I uploaded images of both versions of the game being played.
+
 ## Music Service
 https://github.com/willhuff0/music_fullstack
 
-A full stack music streaming service built from scratch.
+A full stack music streaming service built from scratch. It consists of a server and two client apps. Music is uploaded to the server, where it is processed and indexed. Clients can then search and play music, which is streamed over the network. Initially, I intended to deploy the server on the WAN, but over time I shifted the project's focus to also work well when hosted locally.
 
-I created this project mostly for fun. Later, I adapted it to solve a specific problem I was having. I wanted a way to synchronize speakers in my home.
-
-<!-- I built:
-- a worker system to manage threads
-- a multithreaded http server
-- a stateless session system
-- a web socket server to synchronize music -->
+I created this project mostly for fun. Later, I adapted it to solve a specific problem I was having. I wanted a way to synchronize speakers in my home. Other solutions I found were either too expensive, or didn't work anymore. So, I added the functionally to my already existing music service. The sync feature works best when hosted locally.
 
 ### Open source projects used
 
@@ -781,7 +809,7 @@ class HashedUserPassword {
 
 A TranscodeWorker will acquire a new TranscodeOperation, which are inserted into the database when a song finishes uploading, and begin processing the audio
 
-My audio transcoding process is very procedural, the function mainly consists of verification and error checking. I use ffmpeg's loudnorm filter to normalize the audio so that one song isn't louder than any others. Then I transcode to three different qualities with both libopus and libfdk_aac (aac wouldn't be necessary if apple used common standards, which would save more than half of the storage space since aac files are larger for the same quality - just to point out my frustrations).
+My audio transcoding process is very procedural, the function mainly consists of verification and error checking. I use ffmpeg's loudnorm filter to normalize the audio so that one song isn't louder than any others. Then I transcode to three different qualities with both libopus and libfdk_aac (aac wouldn't be necessary if apple used common standards, which would save more than half of the storage space since aac files are larger for the same quality).
 
 ```dart
 Future<String?> processAudio({required MusicServerPaths paths, required String inputFile, required String outputDir, required List<AudioPreset> presets}) async {
@@ -1008,7 +1036,7 @@ void main() {
 }
 ```
 
-On the Dart side, I generate random positions with a simple poisson disk sample
+On the Dart side, I generate random positions with a simple poisson disk sample.
 
 ```dart
 /// Simple Poisson Disk Sampling. Generates random points until count valid points are found. Fails after 100 unsuccessful samples.
