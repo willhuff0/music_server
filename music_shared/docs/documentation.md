@@ -5,7 +5,7 @@ https://github.com/willhuff0/GPUClicker
 
 Made in Unity.
 
-Summary of the concept: Tap to progress, accumulate different types of points with each click and unlock upgrades to reach higher levels. Clicking the GPU in the middle of the screen generates hashes. Once enough hashes are obtained, a block will be awarded, hashes reset, and the number of hashes required to get the next block increases. To overcome this, the player can prestige to a new cryptocurrency, after which the block difficulty resets and new upgrades are unlocked. Upgrades either generate hashes automatically, or increase the effectiveness of tapping.
+Summary of the concept: Tap to progress, accumulate different types of points with each click and unlock upgrades to reach higher levels. Clicking the GPU in the middle of the screen generates hashes. Once enough hashes are obtained, a block will be awarded, hashes reset, and the number of hashes required to get the next block increases. To overcome this, the player can prestige to a new cryptocurrency, after which the block difficulty resets and new upgrades are unlocked. Upgrades either generate hashes automatically or increase the effectiveness of tapping.
 
 The app is available for iOS on TestFlight: https://testflight.apple.com/join/lw6eOvD1, and for Android through Google Play internal testing: https://play.google.com/apps/internaltest/4701185352615742940
 
@@ -52,7 +52,7 @@ public override void Apply(ulong count, ref ApplyResult result)
 }
 ```
 
-Utils.IntPow is a very simple optimization for calculating a power
+Utils.IntPow is a very simple optimization for calculating a power.
 
 ```cs
 public static double IntPow(double x, ulong pow)
@@ -69,7 +69,7 @@ public static double IntPow(double x, ulong pow)
 
 ## Windows Automation and Kiosk App
 
-For my job at the Goodwill Computer Store.
+Created for my job at the Goodwill Computer Store.
 
 ### Open source projects used
 
@@ -116,7 +116,7 @@ Some of the UI is shown in my video.
 
 ## Nebula
 
-A bare bones game and rendering engine. For rendering, this project uses Google ANGLE to translate OpenGLES to DirectX, Vulkan, or Metal calls. This improves performance compared to native OpenGL drivers. I also wrote a Node tree system with parenting to make nodes move together. Nodes can be extended to do things like render a mesh. The engine manages serialization of assets and has some built in asset types.
+A bare bones game and rendering engine. For rendering, this project uses Google ANGLE to translate OpenGLES to DirectX, Vulkan, or Metal calls. This improves performance compared to native OpenGL drivers. I also wrote a node tree system with parenting to make nodes move together. Nodes can be extended to do things like rendering a mesh. The engine manages serialization of assets and has some built in asset types.
 
 ### Open source projects used
 
@@ -145,11 +145,11 @@ public static partial void BufferData(GLenum target, GLsizeiptr size, byte[] dat
 GL.BufferData(GL.ARRAY_BUFFER, vertexData.LongLength, vertexData, GL.STATIC_DRAW);
 ```
 
-bufferData in OpenGLES / ANGLE uploads data to the GPU, which contains a list of packed vertex data. Usually, position, texture coordinate, and normal direction information is placed side by side in the array. A call to vertexAttribPointer specifies the exact layout of this information so it can be used correctly in shaders.
+bufferData in OpenGLES / ANGLE uploads data to the GPU which contains a list of packed vertex data. Usually, position, texture coordinate, and normal direction information is placed side-by-side in the array. A call to vertexAttribPointer specifies the exact layout of this information so it can be used correctly in shaders.
 
 #### RenderShader
 
-This asset loads a vertex and fragment shader for use in material assets, which usually holds a reference to a common shader paired with different textures or parameters.
+This asset loads a vertex and fragment shader for use in material assets, which usually hold a reference to a common shader paired with different textures or parameters.
 
 ```cs
 using System.Numerics;
@@ -372,7 +372,7 @@ public class RuntimeRenderShader : RuntimeAsset
 
 #### Physically Based Rendering
 
-A fragment shader which uses PBR BRDF, with the rather common Smith GGX model for specular, Cook-Torrance for fresnel, and Lambert for diffuse.
+A fragment shader which uses PBR with the rather common Smith GGX model for specular, Cook-Torrance for fresnel, and Lambert for diffuse.
 
 ```glsl
 #version 310 es
@@ -472,19 +472,19 @@ void main() {
 
 ## Calculator Snake
 
-I wrote a snake game on my TI-84 Plus CE when I was stuck in the exam room after finishing my AP Statistics midterm.
+My video opens with me playing a snake game on my TI-84 Plus CE. I created it after completing my AP Statistics midterm while I was waiting to leave the testing room.
 
-The program lays out a grid of points using Pt-On and Pt-Off. One of which starts as a snake head (represented as a green point), and one as an apple (represented as a red point).
+The program lays out a grid of points using Pt-On and Pt-Off, one of which starts as a snake head, represented as a green point, and one as an apple, represented as a red point.
 
 The apple's position is any random point that doesn't contain a part of the snake.
 
 The snake head moves one space each tick. When colliding with the apple, the snake eats it and its body grows in size by one. A new apple is spawned randomly again.
 
-Since my calculator's smallest unit of time is integer seconds, I am unable to speed up the game over time, like in traditional snake games. The tick rate is fixed at 1 tick per second.
+Since my calculator's smallest unit of time is integer seconds, I am unable to speed up the game over time, as in traditional snake games. The tick rate is fixed at 1 tick per second.
 
-If the snake manages to fill up every space, without colliding with its body or the walls, the player wins.
+If the snake manages to fill up every space without colliding with its body or the walls, the player wins.
 
-The program uses lists to store the snake's body positions. L1 for X and L2 for Y.
+The program uses lists to store the snake's body positions: L1 for X and L2 for Y.
 
 This snippet shows moving each snake body part forward by one if the snake has at least 2 body parts. By doing this each part of the snake will follow the exact path taken by the head as is traditional in snake.
 
@@ -498,16 +498,18 @@ End
 End
 ```
 
-The program is based on a version of snake I wrote a bit earlier called 'file_explorer_snake' (https://github.com/willhuff0/file_explorer_snake). In this version a 10x10 grid of grey images are saved to a directory, the images are then swapped out for different colors creating the screen of the game. This version had a similar problem of being speed limited; Windows file explorer refreshes at a fixed rate, so each tick has to happen about every 2 seconds.
+The program is based on a version of snake I wrote a bit earlier called 'file_explorer_snake' (https://github.com/willhuff0/file_explorer_snake). In this version a 10x10 grid of grey images are saved to a directory, the images are then swapped out for different colors creating the screen of the game. This version had a similar problem of having a limited refresh rate. Windows File Explorer refreshes at a fixed rate, so each tick has to happen about every 2 seconds.
 
 I uploaded images of both versions of the game being played.
 
 ## Music Service
 https://github.com/willhuff0/music_fullstack
 
-A full stack music streaming service built from scratch. It consists of a server and two client apps. Music is uploaded to the server, where it is processed and indexed. Clients can then search and play music, which is streamed over the network. Initially, I intended to deploy the server on the WAN, but over time I shifted the project's focus to also work well when hosted locally.
+A full stack music streaming service built from scratch.
 
-I created this project mostly for fun. Later, I adapted it to solve a specific problem I was having. I wanted a way to synchronize speakers in my home. Other solutions I found were either too expensive, or didn't work anymore. So, I added the functionally to my already existing music service. The sync feature works best when hosted locally.
+The project consists of a server and two client apps. Music is uploaded to the server where it is processed and indexed. Clients can then search and play music which is streamed over the network. Initially, I intended to deploy the server on the WAN, but over time I shifted the project's focus to also work well when hosted locally.
+
+I created this project mostly for fun. Later, I adapted it to solve a specific problem. I wanted a way to synchronize multiple speakers in my home. Other solutions I found were either too expensive or didn't work anymore, so I added the functionally to my already existing music service. The sync feature works best when hosted locally.
 
 ### Open source projects used
 
@@ -524,7 +526,7 @@ I created this project mostly for fun. Later, I adapted it to solve a specific p
 
 - Flutter (https://github.com/flutter/flutter): UI toolkit
 - just_audio (https://github.com/ryanheise/just_audio): Audio player for Flutter
-- flutter_secure_storage (https://github.com/mogol/flutter_secure_storage): Access to iOS keychain etc
+- flutter_secure_storage (https://github.com/mogol/flutter_secure_storage): Access to iOS Keychain, etc.
 - dyn_mouse_scroll (https://github.com/alesimula/dyn_mouse_scroll): Fixes an issue with scrolling in Flutter
 - infinite_scroll_pagination (https://github.com/EdsonBueno/infinite_scroll_pagination): Drop in pagination for scrolling views
 - desktop_drop (https://github.com/MixinNetwork/flutter-plugins/tree/main/packages/desktop_drop): Drag and drop files into Flutter app
@@ -535,7 +537,7 @@ I created this project mostly for fun. Later, I adapted it to solve a specific p
 
 #### Worker
 
-The class mainly deals with Dart's threading system. To avoid common multithreading related bugs, Dart doesn't allow shared memory between threads (yet). Which is why, I assume, they call threads Isolates. To exchange information messages have to be sent over ports, which can be a pain, and is why I keep all of that logic out of mind in these classes.
+The class mainly deals with Dart's threading system. To avoid common multithreading related bugs, Dart doesn't allow shared memory between threads (yet) which is why, I assume, they call threads Isolates. To exchange information, messages have to be sent over ports which can be a pain and is why I keep all of that logic out of mind in these classes.
 
 ```dart
 class WorkerManager {
@@ -619,9 +621,9 @@ class WorkerLaunchArgsWithAuthentication extends WorkerLaunchArgs {
 ```
 
 
-##### APIWorker
+#### APIWorker
 
-This class implements the Worker interface and allows me to provide list of CustomHandler objects, which take a route and a closure to be executed when an http request is received. I extend CustomHandlerBase to CustomHandlerAuthRequired which inserts some extra code before calling the provided closure to automatically handle authentication tokens. Since the closure may be executed on some arbitrary thread, CustomThreadData is passed to allow access to some thread bound state, such as the Isar database reference.
+This class implements the Worker interface and allows me to provide a list of CustomHandler objects which take a route and a closure to be executed when an http request is received. I extend CustomHandlerBase to CustomHandlerAuthRequired which inserts some extra code before calling the provided closure to automatically handle session token verification. Since the closure may be executed on some arbitrary thread, CustomThreadData is passed to allow access to some thread bound state, such as the Isar database reference.
 
 ```dart
 class APIWorker implements Worker {
@@ -712,7 +714,7 @@ class APIWorkerLaunchArgs extends WorkerLaunchArgs {
 }
 ```
 
-List of handlers used in music_server (note some functional programming aspects, the handle variable takes a Function object):
+The list of handlers used in music_server (note some functional programming aspects: the handle variable takes a Function object)
 
 ```dart
 final musicServerCustomHandlers = [
@@ -743,13 +745,13 @@ final musicServerCustomHandlers = [
 
 ### Sessions
 
-Each time the server starts, it generates a new random key to use with Hmac. If this server was deployed for real, this key should be rotated at runtime, and destroyed properly so it doesn't sit in memory for too long waiting to be garbage collected. With that said, I'm sure there is plenty of other security vulnerabilities dotted around.
+Each time the server starts, it generates a new random key to use with Hmac. If this server was deployed for real, this key should be rotated at runtime and destroyed properly so it doesn't sit in memory for too long waiting to be garbage collected. With that said, I'm sure there are plenty of other security vulnerabilities dotted around.
 
 ```dart
 final privateKey = generateSecureRandomKey(config.tokenKeyLength);
 ```
 
-The IdentityToken is analogous to a JWT (JSON Web Token). It is generated and signed by the server then stored on the client. On each API request, inside CustomHandlerAuthRequired, the tokens signature is verified to be authentic by comparing it to a freshly generated one based on the token's data. Tokens cannot be modified or forged as the signature would no longer match the token's data. In order to generate a valid signature, one would need to know the privateKey ^above.
+The IdentityToken is analogous to a JWT (JSON Web Token), and is generated and signed by the server then stored on the client. On each API request, inside CustomHandlerAuthRequired, the tokens signature is verified to be authentic by comparing it to a freshly generated one based on the token's data. Tokens cannot be modified or forged as the signature would no longer match the token's data. In order to generate a valid signature, one would need to know the privateKey ^above.
 
 Example of an IdentityToken and its signature:
 
@@ -807,9 +809,9 @@ class HashedUserPassword {
 
 #### Transcoding
 
-A TranscodeWorker will acquire a new TranscodeOperation, which are inserted into the database when a song finishes uploading, and begin processing the audio
+A TranscodeWorker will acquire a new TranscodeOperation, which is inserted into the database when a song finishes uploading, and begin processing the audio.
 
-My audio transcoding process is very procedural, the function mainly consists of verification and error checking. I use ffmpeg's loudnorm filter to normalize the audio so that one song isn't louder than any others. Then I transcode to three different qualities with both libopus and libfdk_aac (aac wouldn't be necessary if apple used common standards, which would save more than half of the storage space since aac files are larger for the same quality).
+My audio transcoding process is very procedural, the function mainly consists of verification and error checking. I use ffmpeg's loudnorm filter to normalize the audio so that one song isn't louder than any others. Then I transcode to three different qualities with both libopus and libfdk_aac (aac wouldn't be necessary if Apple used common standards, which would save more than half of the storage space since aac files are larger for the same quality).
 
 ```dart
 Future<String?> processAudio({required MusicServerPaths paths, required String inputFile, required String outputDir, required List<AudioPreset> presets}) async {
@@ -940,7 +942,7 @@ final transcodeResult = await Process.run(paths.magickPath, encodeParameters);
 
 #### Search
 
-This snippet from songSearchHandler preforms a query on the stored and indexed phonetic codes of each song's name. Isar generates functions with names based on the variables in the data model, ie in "sortByPopularityDesc", popularity is a double stored in each song document. Searching on indexes is much faster than filtering each document, and using phonetic codes allows that search to still be fuzzy (such as allowing a spelling error in a song title).
+This snippet from songSearchHandler preforms a query on the stored and indexed phonetic codes of each song's name. Isar generates functions with names based on the variables in the data model. For example, in "sortByPopularityDesc" popularity is a double stored in each song document. Searching on indexes is much faster than filtering each document, and using phonetic codes allows that search to still be fuzzy (such as allowing a spelling error in a song title).
 
 ```dart
 final queryPhonetics = getPhoneticCodesOfQuery(queryString);
@@ -953,9 +955,9 @@ return Response.ok(jsonEncode(searchResults.map((song) => song.toJson()).toList(
 
 Here's a tongue twister: SyncSessionWorkers manage web socket servers that mediate sync sessions.
 
-Sync sessions allow multiple clients signed in as the same user to play music at the same time, over the LAN this can be quite precise.
+Sync sessions allow multiple clients signed in as the same user to play music at the same time. Over the LAN, this can be quite precise.
 
-The server serves mainly as a relay to allow clients to send messages to each other. But some important logic is preformed in this case statement inside _onRequest. The 'effective' time is in the future, it is the exact time the clients should begin playback.
+The server serves mainly as a relay to allow clients to send messages to each other, but some important logic is preformed in this case statement inside _onRequest. The 'effective' time is in the future - it is the exact time the clients should begin playback.
 
 ```dart
 case 'callTimeSensitive':
@@ -972,7 +974,7 @@ case 'callTimeSensitive':
   break;
 ```
 
-Client side, the difference between the server and client device's clocks is calculated.
+Client side, the difference between the server and client devices' clocks is calculated.
 
 ```dart
 void _timeResponse(dynamic json) {
@@ -1010,7 +1012,7 @@ void _playResponse(dynamic json) async {
 
 #### Visuals
 
-This is the main logic of a gradient shader I use as a background nearly everywhere. Each of the arrays, uPointPositions, uPointSizes, and uPointColors, contain 4 elements. Each fragment simply measures its distance to each of the points and adds that point's color multiplied by a distance based falloff.
+This is the main logic of a gradient shader I use as a background nearly everywhere in the music service apps. Each of the arrays, uPointPositions, uPointSizes, and uPointColors, contain 4 elements. Each fragment simply measures its distance to each of the points and adds that point's color multiplied by a distance based falloff.
 
 ```glsl
 float falloff(float dist, float size) {
@@ -1036,7 +1038,7 @@ void main() {
 }
 ```
 
-On the Dart side, I generate random positions with a simple poisson disk sample.
+On the Dart side, I generate random positions with a simple Poisson Disk sample.
 
 ```dart
 /// Simple Poisson Disk Sampling. Generates random points until count valid points are found. Fails after 100 unsuccessful samples.
@@ -1071,10 +1073,10 @@ List<(double x, double y)> poissonDiskSample({required int count, required doubl
 }
 ```
 
-Then I take two samples and interpolate between them
+Then I take two samples and interpolate between them.
 
 ```dart
 final pointPositions = lerpPositions(pointPositionsA!, pointPositionsB!, animationController.value);
 ```
 
-An image of the gradient with some red and blue colors is labeled 'Music Service Gradient Background'. More demonstrations are in the video.
+I uploaded an image of the gradient with some red and blue colors which is labeled 'Music Service Gradient Background'. More demonstrations are in my video.
